@@ -92,8 +92,8 @@ attempts.
 ## Background
 
 Built by [Henry Zhang](https://www.linkedin.com/in/henryzhang99/) — quantitative engineer,
-fifteen years building research platforms and production trading systems at BlackRock,
-PIMCO, and TCW.
+fifteen years building research platforms and production trading systems, including eight
+at BlackRock and two at PIMCO.
 
 Writing on the system:
 [Meet AQR — Autonomous Quant Researcher](https://www.linkedin.com/feed/update/urn:li:activity:7495275557270614016/) ·
