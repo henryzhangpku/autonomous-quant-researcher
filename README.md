@@ -96,7 +96,6 @@ fifteen years building research platforms and production trading systems, includ
 at BlackRock and two at PIMCO.
 
 Writing on the system:
-[Meet AQR — Autonomous Quant Researcher](https://www.linkedin.com/feed/update/urn:li:activity:7495275557270614016/) ·
 [Quant research has always been the bottleneck](https://www.linkedin.com/feed/update/urn:li:activity:7493897901451063296/)
 
 ---
