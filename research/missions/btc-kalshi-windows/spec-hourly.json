@@ -1,0 +1,16 @@
+{
+  "name": "btc-kalshi-windows-hourly",
+  "universe": ["BTC-HOURLY"],
+  "splits": {
+    "discovery": ["2025-08-08", "2026-03-21"],
+    "validation": ["2026-03-22", "2026-06-05"],
+    "holdout": ["2026-06-06", "2026-08-20"]
+  },
+  "min_trades": {"discovery": 300, "validation": 100, "holdout": 100},
+  "min_sessions": {"discovery": 100, "validation": 35, "holdout": 35},
+  "min_symbols": 1,
+  "max_concentration": 1.0,
+  "cost_bps": 5.0,
+  "target_sharpe": 0.75,
+  "payoff": "next_open_to_close"
+}

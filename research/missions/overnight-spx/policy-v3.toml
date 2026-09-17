@@ -1,0 +1,30 @@
+# overnight-spx v3 confirmation contract (DRAFT, preregistered 2026-08-18).
+# Activates ONLY after the 08-26 snapshot re-pull pins the data hash below.
+# See research/missions/overnight-spx/V3_ROADMAP.md for the full contract.
+name = "overnight-spx-v3-confirmation"
+
+[validator]
+# Same code path as campaign 2; v3 is a new contract via new pinned inputs.
+version = "overnight-spx-causal-v2"
+command = [
+    "python", "-m", "research.validators.overnight_spx_v2",
+    "--candidate", "{candidate}",
+    # PLACEHOLDER: replace with the sha256 of the 2026-08-26+ re-pulled
+    # es_overnight_5min.csv.gz BEFORE any evaluation. A wrong hash fails closed.
+    "--data-hash", "PIN_AFTER_REPULL",
+    "--split", "holdout",
+    # Cost per V3_ROADMAP piece 1: 0.015 unless the captures force a reprice.
+    "--cost-frac", "0.015",
+    "--vrp", "1.0",
+    "--exit", "settlement",
+    "--horizon", "entry_session",
+]
+pattern = 'score=(?P<value>-?[0-9]+(?:\.[0-9]+)?)'
+name = "net_weekly_sharpe"
+direction = "maximize"
+target_metric = 0.75
+
+[budget]
+timeout_seconds = 240
+max_attempts = 1
+min_attempts = 1

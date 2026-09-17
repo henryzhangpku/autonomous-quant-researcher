@@ -1,0 +1,35 @@
+{
+  "cost_bps": 50.0,
+  "max_concentration": 1.0,
+  "min_sessions": {
+    "discovery": 20,
+    "holdout": 10,
+    "validation": 10
+  },
+  "min_symbols": 1,
+  "min_trades": {
+    "discovery": 40,
+    "holdout": 15,
+    "validation": 15
+  },
+  "name": "qqq-0dte-credit-reconstructed",
+  "payoff": "next_open_to_close",
+  "splits": {
+    "discovery": [
+      "2024-01-19",
+      "2025-08-05"
+    ],
+    "holdout": [
+      "2026-02-06",
+      "2026-08-10"
+    ],
+    "validation": [
+      "2025-08-06",
+      "2026-02-05"
+    ]
+  },
+  "target_sharpe": 0.75,
+  "universe": [
+    "QQQ-0DTE-PCS-NM"
+  ]
+}

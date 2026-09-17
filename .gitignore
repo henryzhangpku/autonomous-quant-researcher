@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Secrets — never commit
+.env
+.env.*
+*.pem
+*.key
+
+# Runtime research state (ledgers, snapshots, captured data) is host-local
+.research/
+research/data/*.csv.gz
+research/data/*.jsonl.gz
+research/data/*.parquet
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Demo build output (deployed by the Pages workflow)
+_site/
