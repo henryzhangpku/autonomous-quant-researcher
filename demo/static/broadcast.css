@@ -1,0 +1,1240 @@
+/*
+ * Broadcast mode — the research lab as a television graphic.
+ *
+ * The private research UI is built for an operator sitting a foot from a
+ * monitor: dense tables, 12px labels, subtle greys. A live stream is the
+ * opposite job. The viewer cannot click, cannot scroll, cannot zoom, is often
+ * watching on a phone, and is seeing this through a video encoder that
+ * destroys thin low-contrast text before it destroys anything else.
+ *
+ * So this file is a separate, additive layer rather than a restyle: the
+ * research app keeps its working density, and `?broadcast=1` swaps in a
+ * surface designed to be legible at 1/4 scale on someone else's phone.
+ *
+ * Everything here is presentation. It renders the same read-only session
+ * payload the operator UI polls, adds no capability, and cannot start, stop,
+ * mutate, or consume anything — including the sealed holdout.
+ *
+ * Sizing is viewport-relative (clamp + vw) on purpose: the stream is captured
+ * at whatever resolution OBS is set to, and a fixed px ladder that looks right
+ * at 1080p is unreadable at 720p.
+ */
+
+:root {
+  --bc-bg: #06070b;
+  --bc-panel: #0c0f16;
+  --bc-line: #1b212e;
+  --bc-text: #f2f5fa;
+  --bc-dim: #93a1b8;
+  --bc-faint: #6b7a93;
+  --bc-accent: #f5b13d;   /* QS amber — the lab's own accent */
+  --bc-good: #56c271;
+  --bc-bad: #e5544b;
+  --bc-cool: #5aa9e6;
+}
+
+/* The takeover. Fixed, above everything, its own scroll-free layout. */
+.bc {
+  position: fixed;
+  inset: 0;
+  max-width: 100vw;
+  z-index: 9999;
+  display: grid;
+  /* minmax(0, 1fr), not an implicit auto column: an auto track grows to the
+     widest child's MAX-content and overflows the viewport wholesale (band and
+     stage measured 2024px in a 1920px window, 2026-08-16). The track is hard-
+     capped at the container, and grid items may shrink below min-content. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  background: var(--bc-bg);
+  color: var(--bc-text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+.bc > * { min-width: 0; }
+.bc[hidden] { display: none; }
+body.bc-on { overflow: hidden; }
+
+/* ── Band ─────────────────────────────────────────────────────────────── */
+
+.bc-band {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.1vw, 20px);
+  padding: clamp(8px, .9vw, 16px) clamp(16px, 1.8vw, 34px) clamp(5px, .6vw, 10px);
+  background: var(--bc-panel);
+  /* A lit edge, not a hairline: this reads as broadcast chrome even after
+     the encoder has had its way with the gradient. */
+  border-bottom: 3px solid var(--bc-accent);
+}
+.bc-mark {
+  display: grid;
+  place-items: center;
+  width: clamp(34px, 2.6vw, 48px);
+  aspect-ratio: 1;
+  border-radius: 26%;
+  background: var(--bc-accent);
+  color: #10131a;
+  font-weight: 900;
+  font-size: clamp(20px, 1.7vw, 32px);
+}
+.bc-brand { display: flex; flex-direction: column; min-width: 0; line-height: 1.1; margin-right: auto; }
+.bc-brand b { font-size: clamp(19px, 1.7vw, 34px); font-weight: 900; letter-spacing: .16em; }
+.bc-brand span {
+  font-size: clamp(10px, .82vw, 16px);
+  font-weight: 800;
+  letter-spacing: .22em;
+  color: var(--bc-accent);
+  margin-top: .25em;
+}
+.bc-badges { display: flex; align-items: center; gap: clamp(8px, .9vw, 18px); flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+
+.bc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .5em;
+  border-radius: 999px;
+  padding: .4em .85em;
+  font-size: clamp(10px, .82vw, 16px);
+  font-weight: 900;
+  letter-spacing: .12em;
+  white-space: nowrap;
+}
+.bc-auto { border: 2px solid var(--bc-good); color: var(--bc-good); }
+/* The pill is a button now — the operator can pause/resume the loop from the
+   show itself. Reset the UA button chrome so it keeps looking like a pill. */
+button.bc-pill { font-family: inherit; background: none; cursor: pointer; }
+.bc-auto.is-off {
+  border-color: var(--bc-dim);
+  color: var(--bc-dim);
+  text-decoration: line-through;
+}
+.bc-auto.is-busy { cursor: wait; }
+/* A transient board-level error surface (the sheet's error line is
+   sheet-scoped): a failed autopilot toggle still says so on camera. */
+.bc-toast {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(70px, 10vh, 120px);
+  transform: translateX(-50%);
+  z-index: 10002;
+  max-width: min(720px, 92vw);
+  background: var(--bc-panel);
+  border: 2px solid var(--bc-bad);
+  border-radius: 10px;
+  padding: .6em 1em;
+  color: var(--bc-text);
+  font-size: clamp(12px, 1vw, 17px);
+  font-weight: 800;
+}
+/* styles.css is gone — this file now owns [hidden] for every element whose
+   display it sets, because an author display rule beats the UA hidden rule. */
+.bc-pill[hidden], .bc-traj[hidden], .bc-eq[hidden] { display: none; }
+.bc-live { background: var(--bc-bad); color: #fff; }
+.bc-live i {
+  width: .62em; height: .62em; border-radius: 50%; background: #fff;
+  animation: bc-blink 2s steps(1, end) infinite;
+}
+/* The one moving pixel that proves this is happening now rather than being a
+   screenshot. A 24/7 stream of a mostly-still dashboard has no other tell. */
+@keyframes bc-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: .25 } }
+.bc-live.is-idle { background: var(--bc-line); color: var(--bc-dim); }
+.bc-live.is-idle i { display: none; }
+
+.bc-clock {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: var(--bc-dim);
+  font-size: clamp(12px, 1vw, 19px);
+}
+
+/* ── Stage ────────────────────────────────────────────────────────────── */
+
+.bc-stage {
+  display: flex;
+  flex-direction: column;
+  /* A column flex, not counted grid rows: which optional blocks (scope,
+     objective) are on screen varies per session, and a counted
+     grid-template-rows put the lower panels on the WRONG row — bleeding the
+     counter tiles through the narration panel — whenever the visible count
+     differed from the count hard-coded in the rule. With the lower panel as
+     the only flex:1 child the layout is correct for any combination of
+     hidden/visible optionals.
+     Tightened to buy back the vertical the loop strip and trajectory chart
+     spend — the board must still fit the fixed frame at 1080p. */
+  gap: clamp(6px, .8vh, 16px);
+  /* Top tighter than bottom: the band → loop strip → mission run had dead
+     air between chrome and content at 1080p. */
+  padding: clamp(6px, .9vh, 14px) clamp(20px, 2.4vw, 54px) clamp(8px, 1.1vh, 20px);
+  min-height: 0;
+}
+.bc-stage > * { flex: none; }
+.bc-mission {
+  overflow-wrap: anywhere;
+  font-size: clamp(11px, .95vw, 19px);
+  font-weight: 800;
+  letter-spacing: .16em;
+  color: var(--bc-faint);
+  text-transform: uppercase;
+}
+.bc-outcome {
+  margin: 0;
+  overflow-wrap: anywhere;
+  /* 68px was poster-sized and starved the evidence panels below; ~50px still
+     reads as THE headline at capture distance. */
+  font-size: clamp(22px, 2.6vw, 50px);
+  font-weight: 900;
+  line-height: 1.04;
+  letter-spacing: -.015em;
+}
+.bc-outcome small {
+  display: block;
+  margin-top: .35em;
+  font-size: clamp(12px, .95vw, 19px);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--bc-dim);
+}
+
+/* Stage lights: discovery → validation → holdout, the actual shape of the
+   scientific method this lab runs. */
+.bc-stages { display: flex; align-items: center; gap: clamp(8px, 1vw, 20px); flex-wrap: wrap; }
+.bc-stage-chip {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+  gap: .25em;
+  padding: .4em .8em;
+  border: 2px solid var(--bc-line);
+  border-radius: 12px;
+  /* widened only where there is room; see the narrow-width blocks */
+  min-width: min(clamp(150px, 15vw, 300px), 100%);
+}
+.bc-stage-chip b {
+  font-size: clamp(11px, .9vw, 18px);
+  font-weight: 900;
+  letter-spacing: .16em;
+  color: var(--bc-faint);
+}
+.bc-stage-chip span { font-size: clamp(12px, 1vw, 20px); font-weight: 800; color: var(--bc-text); }
+.bc-stage-chip.is-active { border-color: var(--bc-accent); background: rgba(245, 177, 61, .09); }
+.bc-stage-chip.is-active b { color: var(--bc-accent); }
+/* Sealed is a state worth seeing from across a room: the holdout is one-use,
+   and "we have not opened it" is the most important claim on screen. */
+.bc-stage-chip.is-sealed { border-color: var(--bc-cool); }
+.bc-stage-chip.is-sealed b, .bc-stage-chip.is-sealed span { color: var(--bc-cool); }
+.bc-arrow { color: var(--bc-line); font-size: clamp(16px, 1.4vw, 30px); font-weight: 900; }
+
+/* ── The loop ─────────────────────────────────────────────────────────── */
+/* Loop engineering on screen: ask → compile → propose → admit → evaluate →
+   verdict → learn → repeat, as a strip of stage chips. Exactly one stage is
+   lit at a time; the glow is the "something is happening right now" cue. */
+#bc-loop {
+  display: flex;
+  align-items: center;
+  /* Exactly one row: the kicker, the seven chips and the loops-today count
+     share a single nowrap strip. The strip used to wrap, orphaning LEARN onto
+     a second line and floating the count onto a third; below ~1400px the
+     captions drop (see the media query by the chip rules) instead of wrapping. */
+  flex-wrap: nowrap;
+  gap: clamp(6px, .7vw, 14px);
+  min-width: 0;
+}
+#bc-loop .bc-kicker { flex: none; }
+
+/* The chips live in an inner row so the kicker and the loop count can flank
+   them on the same strip. */
+#bc-loop-stages {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  gap: clamp(5px, .6vw, 12px);
+  min-width: 0;
+}
+
+.bc-loop-chip {
+  display: flex;
+  flex-direction: column;
+  gap: .15em;
+  min-width: 0;
+  /* Equal shares that shrink and ellipsize: seven chips must divide the
+     strip, never sum past it — a nowrap caption's min-content may not push
+     the board wider than the viewport. */
+  flex: 1 1 0;
+  padding: .28em .6em;
+  border: 2px solid var(--bc-line);
+  border-radius: 10px;
+}
+.bc-loop-chip b {
+  font-size: clamp(10px, .8vw, 16px);
+  font-weight: 900;
+  letter-spacing: .14em;
+  color: var(--bc-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bc-loop-chip small {
+  font-size: clamp(9px, .72vw, 14px);
+  font-weight: 700;
+  color: var(--bc-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Below ~1700px the captions cost more width than they carry; label-only
+   chips keep the strip on exactly one row at narrower capture sizes. */
+@media (max-width: 1700px) {
+  .bc-loop-chip small { display: none; }
+}
+.bc-loop-chip.is-active {
+  border-color: var(--bc-accent);
+  background: rgba(245, 177, 61, .09);
+  animation: bc-loop-pulse 2.4s ease-in-out infinite;
+}
+.bc-loop-chip.is-active b { color: var(--bc-accent); }
+.bc-loop-chip.is-active small { color: var(--bc-text); }
+/* A pulse the encoder can survive: a soft halo that breathes, not a
+   hairline shimmer that compresses to mud. */
+@keyframes bc-loop-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 177, 61, 0); }
+  50% { box-shadow: 0 0 18px 2px rgba(245, 177, 61, .38); }
+}
+.bc-loop-arrow { color: var(--bc-faint); font-size: clamp(12px, 1vw, 20px); font-weight: 900; }
+.bc-loop-count {
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: clamp(10px, .82vw, 16px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--bc-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Counters — the numbers that make the method legible. */
+.bc-counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(8px, 1vw, 20px); }
+.bc-tile {
+  min-width: 0;
+  background: var(--bc-panel);
+  border: 2px solid var(--bc-line);
+  border-radius: 14px;
+  padding: clamp(7px, .9vh, 16px) clamp(12px, 1.2vw, 24px);
+}
+.bc-tile b {
+  display: block;
+  font-size: clamp(22px, 2.4vw, 46px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.bc-tile span {
+  display: block;
+  margin-top: .4em;
+  font-size: clamp(10px, .82vw, 16px);
+  font-weight: 800;
+  letter-spacing: .14em;
+  color: var(--bc-faint);
+  text-transform: uppercase;
+}
+/* The scope line under a number is load-bearing, not decoration: a bare
+   "best score" on a public stream is a performance claim waiting to happen. */
+.bc-tile small {
+  display: block;
+  margin-top: .3em;
+  font-size: clamp(9px, .72vw, 14px);
+  font-weight: 700;
+  color: var(--bc-faint);
+  opacity: .85;
+}
+.bc-tile.is-accent b { color: var(--bc-accent); }
+.bc-tile.is-muted b { color: var(--bc-dim); }
+
+/* Narration + ledger share the remaining height. The ONLY growing child of
+   the stage's column flex, so it — and nothing else — absorbs whatever
+   vertical is left after the optional blocks above it. */
+.bc-lower { flex: 1 1 auto; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: clamp(10px, 1.2vw, 24px); min-height: 0; }
+.bc-narration {
+  background: var(--bc-panel);
+  border: 2px solid var(--bc-line);
+  border-radius: 14px;
+  padding: clamp(12px, 1.4vh, 26px) clamp(14px, 1.4vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: .6em;
+  min-height: 0;
+  /* Clips the loops list (not the age line — it is flex:none below) when a
+     short panel cannot fit everything. */
+  overflow: hidden;
+}
+.bc-kicker {
+  font-size: clamp(10px, .82vw, 16px);
+  font-weight: 900;
+  letter-spacing: .18em;
+  color: var(--bc-accent);
+  /* One line, always: a wrapped kicker steals a row from a fixed frame. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.bc-narration p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(14px, 1.25vw, 27px);
+  line-height: 1.42;
+  font-weight: 600;
+  overflow: hidden;
+  /* A finding's narration is question + summary joined by a blank line; without
+     this the two ran together as one sentence. */
+  white-space: pre-line;
+  /* Fixed at its (clamped) content height; the loops list below is the one
+     that grows into free space — see the comment on .bc-loops. */
+  flex: none;
+  /* Clamp to whole lines with an ellipsis (~6 at 1080p): a rationale cut
+     mid-sentence by the panel bottom read as a rendering bug on camera. The
+     max-height is the HARD clip: line-clamp alone let fragments of a 7th
+     line paint below the ellipsis line when flex stretched the box past six
+     lines (1490×715 capture, 2026-08-16). +2px of tolerance absorbs line-box
+     rounding without letting a glyph through. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  max-height: calc(6 * 1.42em + 2px);
+}
+.bc-age { flex: none; font-size: clamp(10px, .82vw, 16px); font-weight: 700; color: var(--bc-faint); margin-top: auto; }
+
+/* TODAY'S LOOPS — the outer loop's own launch history, filling the narration
+   panel's dead space under the rationale. The block OWNS the panel's free
+   space (flex: 1), so its height is content-INDEPENDENT — the same property
+   that keeps the ledger's row trim stable. A content-sized, bottom-anchored
+   box cascades: each removed row shrinks the clip box by exactly one row, so
+   the trim never converges (measured live: 6 rows trimmed to 0, 2026-08-16). */
+.bc-loops {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: .4em;
+}
+.bc-loops[hidden] { display: none; }
+#bc-loops-rows {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: .35em;
+  min-height: 0;
+  overflow: hidden;
+}
+.bc-loop-row {
+  display: flex;
+  align-items: baseline;
+  gap: .6em;
+  font-size: clamp(11px, .9vw, 17px);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.bc-loop-row .bc-loopq {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--bc-dim);
+  font-weight: 600;
+}
+.bc-loop-row .bc-loopm {
+  flex: none;
+  color: var(--bc-faint);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* UP NEXT — the queue the loop drains next. Sits above TODAY'S LOOPS in the
+   narration panel; unlike the loops list it is flex:none and capped by the
+   renderer (whole rows only, never clipped mid-row), so it can never starve
+   the loops block below it. */
+.bc-queue {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: .4em;
+  min-height: 0;
+  overflow: hidden;
+}
+.bc-queue[hidden] { display: none; }
+#bc-queue-rows {
+  display: flex;
+  flex-direction: column;
+  gap: .35em;
+  min-height: 0;
+  overflow: hidden;
+}
+.bc-queue-row {
+  display: flex;
+  align-items: baseline;
+  gap: .6em;
+  font-size: clamp(11px, .9vw, 17px);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.bc-queue-row .bc-qq {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--bc-dim);
+  font-weight: 600;
+}
+.bc-q-tag {
+  flex: none;
+  align-self: center;
+  font-size: .76em;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--bc-faint);
+  border: 1px solid var(--bc-line);
+  border-radius: 6px;
+  padding: .12em .45em;
+}
+.bc-queue-row .bc-qf {
+  flex: none;
+  max-width: 28%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--bc-faint);
+  font-weight: 700;
+}
+/* Queue reordering is a pointer affair (see renderQueue): small, quiet, and
+   vertically centered against the row's baseline flex. */
+.bc-q-moves { flex: none; align-self: center; display: inline-flex; gap: 4px; }
+.bc-q-move {
+  background: none;
+  border: 1px solid var(--bc-line);
+  border-radius: 6px;
+  color: var(--bc-dim);
+  font: inherit;
+  font-size: .85em;
+  line-height: 1;
+  padding: .18em .45em;
+  cursor: pointer;
+}
+.bc-q-move:hover { color: var(--bc-text); border-color: var(--bc-dim); }
+.bc-q-move[disabled] { opacity: .35; cursor: default; }
+.bc-q-move[disabled]:hover { color: var(--bc-dim); border-color: var(--bc-line); }
+
+.bc-ledger {
+  background: var(--bc-panel);
+  border: 2px solid var(--bc-line);
+  border-radius: 14px;
+  padding: clamp(12px, 1.4vh, 26px) clamp(14px, 1.4vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: .45em;
+  min-height: 0;
+  overflow: hidden;
+}
+/* The rows region owns the leftover height and clips at a row boundary:
+   renderLedger trims to the whole rows that actually fit, so the panel never
+   shows half a row at its bottom edge. */
+#bc-rows {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: .5em;
+}
+.bc-row {
+  display: grid;
+  /* minmax(0, 1fr), not 1fr: a nowrap note's min-content otherwise sizes the
+     track and the row forces the whole board wider than the viewport. */
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: .8em;
+  font-size: clamp(12px, 1.05vw, 22px);
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* A quiet separator to help the eye track a row across the panel. Cosmetic
+   only — nothing load-bearing rides on a 1px line surviving the encoder. */
+.bc-row + .bc-row { border-top: 1px solid var(--bc-line); padding-top: .3em; }
+.bc-row .bc-note { min-width: 0; }
+.bc-row .bc-run { color: var(--bc-faint); font-weight: 800; }
+.bc-row .bc-metric { font-weight: 900; }
+.bc-row .bc-note { color: var(--bc-dim); overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.bc-row.is-new .bc-note { color: var(--bc-text); }
+.bc-d-accepted { color: var(--bc-good); }
+.bc-d-improved { color: var(--bc-accent); }
+.bc-d-discarded { color: var(--bc-dim); }
+.bc-d-failed { color: var(--bc-bad); }
+
+/* ── Trajectory ───────────────────────────────────────────────────────── */
+/* The experiment trajectory: every trial as a dot, the best-so-far as an
+   amber step line ratcheting upward. Sits above the ledger it summarizes. */
+.bc-traj {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: .35em;
+  min-width: 0;
+}
+.bc-traj-chart {
+  position: relative;
+  /* Tall enough to actually read: 60-96px rendered the ratchet as a smear. */
+  height: clamp(84px, 12vh, 150px);
+}
+#bc-trajectory {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* The scored extremes, top = best / bottom = worst, set from real data by
+   renderTrajectory. HTML overlay, not SVG text: preserveAspectRatio "none"
+   would stretch glyphs into mud. */
+.bc-traj-max, .bc-traj-min {
+  position: absolute;
+  left: 2px;
+  font-size: clamp(9px, .72vw, 13px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--bc-faint);
+}
+.bc-traj-max { top: 0; }
+.bc-traj-min { bottom: 11%; }  /* just above the baseline axis */
+/* The zero-reference baseline: gives the eye a floor and keeps a flat
+   best-so-far line readable as honestly flat rather than as a bug. */
+.bc-traj-axis {
+  fill: none;
+  stroke: var(--bc-line);
+  stroke-width: 2;
+}
+/* Dot verdicts reuse the ledger's decision colors so the two read as one
+   system: improved = amber, discarded = dim, failed = red. */
+.bc-traj-dot { fill: var(--bc-dim); }
+.bc-traj-dot.bc-d-accepted { fill: var(--bc-good); }
+.bc-traj-dot.bc-d-improved { fill: var(--bc-accent); }
+.bc-traj-dot.bc-d-discarded { fill: var(--bc-dim); }
+.bc-traj-dot.bc-d-failed { fill: var(--bc-bad); }
+/* Failed trials: the × over a scored point and the baseline tick for a
+   metric-less one — same red, thinner than the ratchet line. */
+.bc-traj-fail {
+  fill: none;
+  stroke: var(--bc-bad);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.bc-traj-line {
+  fill: none;
+  stroke: var(--bc-accent);
+  /* 4px: the ratchet is the chart's argument, and a 3px line at 1/4 scale on
+     a phone is where the encoder starts eating it. */
+  stroke-width: 4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.bc-traj-rate {
+  font-size: clamp(10px, .82vw, 16px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--bc-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Equity curve ───────────────────────────────────────────────────────── */
+/* The session's net equity over the full window, additive fixed-notional
+   staking. Same frame and label idiom as the trajectory above it; the line
+   is cool blue so it never reads as the amber best-so-far ratchet. */
+.bc-eq {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: .35em;
+  min-width: 0;
+}
+.bc-eq-chart {
+  position: relative;
+  height: clamp(84px, 12vh, 150px);
+}
+#bc-equity {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Equity extremes (top = best, bottom = worst) and the window's first/last
+   dates: HTML overlays like the trajectory's, never stretched SVG text. */
+.bc-eq-max, .bc-eq-min, .bc-eq-date {
+  position: absolute;
+  font-size: clamp(9px, .72vw, 13px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--bc-faint);
+}
+.bc-eq-max { left: 2px; top: 0; }
+.bc-eq-min { left: 2px; bottom: 22%; }  /* above the axis, clear of the dates */
+.bc-eq-date { bottom: 0; color: var(--bc-faint); }
+.bc-eq-date-a { left: 2px; }
+.bc-eq-date-b { right: 2px; }
+.bc-eq-axis {
+  fill: none;
+  stroke: var(--bc-line);
+  stroke-width: 2;
+}
+/* The 1.0 stake reference: dashed so it reads as a reference, not data. */
+.bc-eq-stake {
+  fill: none;
+  stroke: var(--bc-faint);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  opacity: .7;
+}
+.bc-eq-line {
+  fill: none;
+  stroke: var(--bc-cool);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.bc-eq-note {
+  font-size: clamp(10px, .82vw, 16px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--bc-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The candidate's LABEL leads the ledger note — a touch brighter than the
+   note itself so the eye catches WHAT ran before WHY it scored. */
+.bc-row .bc-note strong,
+.bc-cand-label { color: var(--bc-text); font-weight: 800; }
+/* The label is an inline span inside a clipped, ellipsizing note: left inline,
+   its layout box extends past the note's clip edge (it PAINTS fine — the
+   parent clips — but the box itself measures past the viewport on narrow
+   panels). inline-block capped at the note's width keeps the same ellipsis
+   at the same point with a box that stays inside its parent. */
+.bc-cand-label {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
+/* ── Rail ─────────────────────────────────────────────────────────────── */
+
+.bc-rail {
+  display: flex;
+  align-items: center;
+  /* One line, always: the rail is chrome, and a wrapped second line would
+     push the fixed frame. */
+  flex-wrap: nowrap;
+  gap: clamp(12px, 1.4vw, 28px);
+  padding: clamp(8px, .8vw, 15px) clamp(20px, 2.4vw, 54px);
+  background: var(--bc-panel);
+  border-top: 3px solid var(--bc-accent);
+}
+
+.bc-rail-line {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* The + New research button floats fixed at the bottom-right; reserve its
+     footprint so the rotating line ellipsizes BEFORE sliding under it. */
+  padding-right: clamp(150px, 13vw, 260px);
+  font-size: clamp(12px, 1.05vw, 22px);
+  font-weight: 700;
+  color: var(--bc-dim);
+  line-height: 1.35;
+}
+
+/* The operator's way in and out. Deliberately small and quiet — it exists for
+   the person running the stream, not the audience, and nothing in broadcast
+   chrome may depend on a tap. */
+/* Hidden until the operator moves a pointer. It sat on top of the desk CTA
+   in every captured frame, and a stream has no cursor — so on camera it was
+   pure clutter over the one line the audience is meant to read. Fades back
+   the instant a human touches the machine. */
+.bc-exit {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+body.bc-pointer .bc-exit { opacity: 1; pointer-events: auto; }
+.bc-exit {
+  position: fixed;
+  bottom: clamp(6px, .6vw, 12px);
+  left: clamp(6px, .6vw, 12px);
+  z-index: 10000;
+  background: rgba(12, 15, 22, .82);
+  color: var(--bc-faint);
+  border: 1px solid var(--bc-line);
+  border-radius: 8px;
+  padding: .35em .7em;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  /* Visibility is owned by the pointer rule above — this used to re-declare
+     opacity AFTER it and win the cascade, so the chip stayed ghosted over the
+     desk CTA in every captured frame despite being "hidden". */
+}
+.bc-exit:hover { color: var(--bc-text); }
+
+/* Short captures (~720p browser sources, e.g. the 1490×715 frame that
+   starved the lower panels on 2026-08-16): reclaim chrome vertical so the
+   narration and ledger keep ~40% of the frame. Widths are untouched — the
+   width-based clamps still govern horizontal rhythm. */
+@media (max-height: 800px) and (min-width: 621px) {
+  .bc-band { padding-top: 6px; padding-bottom: 6px; }
+  .bc-mark { width: clamp(30px, 5vh, 44px); }
+  .bc-rail { padding-top: 6px; padding-bottom: 6px; }
+  .bc-stage { gap: 5px; padding-top: 8px; padding-bottom: 8px; }
+  .bc-tile { padding-top: 6px; padding-bottom: 6px; }
+  .bc-tile b { font-size: clamp(20px, 4.6vh, 40px); }
+  .bc-outcome { font-size: clamp(20px, 4.8vh, 40px); }
+}
+
+/* Very narrow phones: brand + AUTOPILOT (a control — it stays tappable) +
+   LIVE is the header budget; the clock is the expendable item. */
+@media (max-width: 430px) {
+  .bc-clock { display: none; }
+}
+
+/* Half-screen OBS source, or a narrow window. Still a fixed frame. */
+@media (max-width: 900px) and (min-width: 621px) {
+  .bc-counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bc-lower { grid-template-columns: minmax(0, 1fr); }
+  .bc-ledger { display: none; }
+}
+
+/*
+ * Phones. The desktop surface is a fixed three-row frame with overflow hidden,
+ * because a capture must never scroll — which is exactly what cropped the
+ * headline, the badges, the stage chips and the rail line on an iPhone.
+ *
+ * Here it stops being a frame and becomes a page: natural height, one column,
+ * vertical scroll, and no min-widths or nowrap left to force a horizontal
+ * overflow. The content and its honesty rails are identical; only the
+ * geometry changes.
+ */
+@media (max-width: 620px) {
+  /* The page ITSELF scrolls. Keeping the fixed shell and making the STAGE
+     the scroll box — a nested scroller inside a position:fixed ancestor — is
+     precisely the construct iOS Safari strands: the stage stops scrolling and
+     everything below the fold (chips, tiles, panels) reads as a dead zone.
+     With the operator chrome gone there is nothing underneath to overlay, so
+     the shell flows as a normal document. */
+  body.bc-on { overflow: visible; }
+  .bc {
+    position: static;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  .bc-stage {
+    overflow: visible;
+    gap: 14px;
+    padding: 14px 16px 22px;
+  }
+
+  /* The band wraps onto two lines instead of pushing the clock off-screen. */
+  .bc-band { flex-wrap: wrap; gap: 8px 10px; padding: 10px 14px; }
+  .bc-brand { margin-right: auto; }
+  .bc-brand b { font-size: 20px; letter-spacing: .12em; }
+  .bc-brand span { font-size: 10px; letter-spacing: .14em; }
+  .bc-mark { width: 34px; }
+  .bc-badges { width: 100%; gap: 8px; flex-wrap: wrap; }
+  .bc-pill { font-size: 10px; padding: .35em .7em; white-space: normal; }
+  .bc-clock { font-size: 12px; margin-left: auto; }
+
+  .bc-mission { font-size: 11px; letter-spacing: .12em; }
+  .bc-outcome { font-size: 27px; line-height: 1.12; }
+  .bc-outcome small { font-size: 14px; margin-top: .5em; }
+
+  /* Stack the method vertically; the arrows would be lying about direction
+     once the chips are in a column, so they turn to point down. box-sizing:
+     without a global border-box reset (styles.css is gone), width:100% on a
+     content-box chip added its padding and border ON TOP of the full width
+     and overflowed the viewport (404px in a 390px window, 2026-08-16). */
+  .bc-stages { flex-direction: column; align-items: stretch; gap: 6px; }
+  .bc-stage-chip { min-width: 0; width: 100%; box-sizing: border-box; padding: .5em .8em; }
+  .bc-stage-chip b { font-size: 10px; }
+  .bc-stage-chip span { font-size: 15px; }
+  .bc-arrow { display: none; }
+
+  .bc-counters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  /* Kept small: the tiles are context, not the story, and four big ones
+     dominated the first screenful on a phone. */
+  .bc-tile { padding: 8px 10px; }
+  .bc-tile b { font-size: 26px; }
+  .bc-tile span { font-size: 10px; letter-spacing: .1em; }
+  .bc-tile small { font-size: 9px; }
+
+  .bc-lower { flex: none; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  /* Two full-label columns with captions restored: seven equal-share flex
+     chips compressed to single letters ("A. C. P.…") at 390px, which is not
+     a UI. The arrows are hidden — in a grid they would lie about direction. */
+  #bc-loop { flex-wrap: wrap; }
+  #bc-loop-stages {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    overflow: visible;
+  }
+  .bc-loop-arrow { display: none; }
+  .bc-loop-chip small { display: block; }
+  /* The desktop frame clamps long narration to protect a fixed layout. The
+     phone SCROLLS, so clipping here collapsed the paragraph to nothing and
+     left an empty panel under its own heading. */
+  .bc-narration { padding: 14px; min-height: auto; }
+  .bc-narration p { font-size: 15px; line-height: 1.45; overflow: visible; flex: 0 0 auto; display: block; max-height: none; }
+  .bc-age { margin-top: 10px; }
+  /* The loops list flows in the scrolling phone page, capped so it cannot
+     push the ledger miles down; the scheduled trim keeps its rows whole
+     against this max-height. */
+  #bc-loops-rows { max-height: 7em; }
+  .bc-loop-row { font-size: 13px; }
+  /* The ledger is the product's core evidence — the phone gets it too,
+     stacked under the narration; the page scrolls. (The 621-900px fixed
+     frame above still hides it: there is no scroll there.) */
+  .bc-ledger { padding: 14px; }
+  .bc-row { font-size: 13px; }
+
+  /* Phone rail: desk chip left, start button right — one clean row. The
+     rotating rail line is hidden here — at 12px underneath a floating
+     button it was unreadable noise (Henry's 8/15 screenshot). */
+  .bc-rail { flex-wrap: wrap; gap: 10px; padding: 10px 14px; }
+  
+  
+  
+  .bc-rail-line { display: none; }
+
+  /* It sat on top of the CTA. Out of the content entirely, and small. */
+  .bc-exit { bottom: auto; top: 6px; right: 6px; left: auto; font-size: 10px; padding: .3em .5em; }
+}
+
+/* ── Operator furniture: start a run without leaving the show ────────────── */
+
+/* Thumb-reachable on a phone, out of the way of the graphic on a capture.
+   The audience is watching video and cannot press it; this exists purely so
+   the operator can start the next question on camera. */
+.bc-new {
+  position: fixed;
+  right: clamp(10px, 1vw, 20px);
+  bottom: clamp(10px, 1vw, 20px);
+  z-index: 10000;
+  background: var(--bc-accent);
+  color: #10131a;
+  border: none;
+  border-radius: 999px;
+  padding: .62em 1.15em;
+  font: inherit;
+  font-size: clamp(12px, 1vw, 17px);
+  font-weight: 900;
+  letter-spacing: .04em;
+  cursor: pointer;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .5);
+  /* .55 read as 'blocked' on the only UI (Henry, 2026-08-17); slightly
+     recessed, clearly available, full on hover/focus. */
+  opacity: .88;
+  transition: opacity .15s ease;
+}
+.bc-new:hover, .bc-new:focus-visible { opacity: 1; }
+
+.bc-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(3, 4, 7, .78);
+}
+.bc-sheet[hidden] { display: none; }
+.bc-sheet-card {
+  width: min(680px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bc-panel);
+  border: 2px solid var(--bc-line);
+  border-radius: 16px;
+  padding: clamp(16px, 2vw, 26px);
+}
+.bc-sheet-help { margin: 0; color: var(--bc-dim); font-size: clamp(13px, 1vw, 16px); line-height: 1.45; }
+.bc-sheet textarea {
+  width: 100%;
+  background: var(--bc-bg);
+  color: var(--bc-text);
+  border: 2px solid var(--bc-line);
+  border-radius: 12px;
+  padding: 12px;
+  font: inherit;
+  font-size: clamp(16px, 1.1vw, 18px);  /* >=16px keeps iOS from zooming in */
+  resize: vertical;
+}
+.bc-sheet textarea:focus { outline: none; border-color: var(--bc-accent); }
+.bc-sheet-error { color: var(--bc-accent); font-size: clamp(12px, .9vw, 15px); font-weight: 700; min-height: 1.2em; }
+/* What got frozen. The one-tap path is easy to ASK, never vague about what
+   it will actually test. */
+.bc-sheet-mission {
+  margin: 0;
+  max-height: 34vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--bc-bg);
+  border: 1px solid var(--bc-line);
+  border-radius: 10px;
+  padding: 12px;
+  color: var(--bc-dim);
+  font-size: clamp(11px, .85vw, 14px);
+  line-height: 1.5;
+}
+.bc-sheet-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.bc-btn {
+  background: var(--bc-line);
+  color: var(--bc-text);
+  border: none;
+  border-radius: 10px;
+  padding: .7em 1.2em;
+  font: inherit;
+  font-size: clamp(13px, 1vw, 16px);
+  font-weight: 800;
+  cursor: pointer;
+}
+.bc-btn.go { background: var(--bc-accent); color: #10131a; }
+.bc-btn.ghost { background: transparent; border: 2px solid var(--bc-line); color: var(--bc-dim); }
+.bc-btn:hover { filter: brightness(1.08); }
+
+@media (max-width: 620px) {
+  /* Float the start button as a normal mobile CTA. Inline in the rail
+     it lands at the END of a long scrolling page — unreachable, which
+     read as 'the button is blocked' (Henry, 2026-08-17). The rail's
+     bottom padding reserves its footprint so it covers nothing. */
+  .bc-new {
+    position: fixed;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    opacity: .95;
+    padding: .7em 1em;
+    font-size: 13px;
+  }
+  .bc-rail { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  /* Phone sheet: everything border-box. With no global box-sizing reset
+     (styles.css is gone), content-box width:100% children added their
+     padding and border ON TOP of the full width — card, textarea and the
+     wide canonical button each overflowed the viewport (~402px capture,
+     2026-08-16). Vertical: 100dvh tracks iOS's dynamic chrome, so Cancel /
+     Compile stay reachable on a short screen; 92vh is the fallback for
+     browsers without dvh. Desktop rules above are untouched. */
+  .bc-sheet { padding: 10px; }
+  .bc-sheet-card {
+    box-sizing: border-box;
+    width: min(92vw, 680px);
+    max-height: 92vh;
+    max-height: calc(100dvh - 20px);
+    padding: 14px;
+  }
+  .bc-sheet-card * { box-sizing: border-box; }
+  .bc-sheet-actions .bc-btn { flex: 1 1 auto; }
+}
+
+.bc-sheet-or {
+  text-align: center;
+  color: var(--bc-faint);
+  font-size: clamp(11px, .85vw, 14px);
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.bc-btn.wide { width: 100%; }
+.bc-sheet-help.small { font-size: clamp(11px, .82vw, 14px); margin-top: -4px; }
+
+/* ── The verdict ─────────────────────────────────────────────────────────
+ * The rare YES is the moment the whole lab exists for, so it is allowed to
+ * be loud. The scope line directly under it is what stops a screenshot of
+ * that headline becoming a tip. Both are set from the shared verdict module.
+ */
+.bc-outcome.is-found #bc-outcome {
+  color: var(--bc-good);
+  text-shadow: 0 0 34px rgba(86, 194, 113, .45);
+}
+.bc-outcome.is-refuted #bc-outcome { color: var(--bc-dim); }
+.bc-outcome.is-running #bc-outcome { color: var(--bc-text); }
+
+.bc-scope {
+  align-self: start;
+  border-left: 4px solid var(--bc-accent);
+  padding: .3em 0 .3em .7em;
+  color: var(--bc-dim);
+  font-size: clamp(11px, .9vw, 18px);
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.bc-outcome.is-found + .bc-scope { border-left-color: var(--bc-good); }
+@media (max-width: 620px) { .bc-scope { font-size: 12px; } }
+
+/* The OBJECTIVE line — the research question itself, always on screen. The
+   three-beat read of the surface is: objective (this), activity (the loop
+   card), outcome (the verdict headline). */
+.bc-objective {
+  align-self: start;
+  color: var(--bc-dim);
+  font-size: clamp(11px, .9vw, 18px);
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* ── Past research — the review overlay and its pin banner ─────────────────
+ * Read-back only: the overlay spends the same two GETs the poll loop already
+ * issues, and the pin changes which session the camera shows, never the
+ * record. */
+
+/* The rail affordance. Same reveal discipline as the exit chip: a stream has
+   no cursor, so it stays out of the frame until a human moves a pointer. */
+.bc-review-open {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--bc-faint);
+  font: inherit;
+  font-size: clamp(11px, .9vw, 16px);
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: .4em .6em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+body.bc-pointer .bc-review-open { opacity: 1; pointer-events: auto; }
+.bc-review-open:hover { color: var(--bc-text); }
+
+/* The pin banner: first row of the stage, sticky so it survives the phone's
+   scroll. Amber-edged like the scope line — it is an honesty label ("what
+   you are watching is a recording"), not chrome. */
+.bc-review-banner {
+  flex: none;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: .8em;
+  background: var(--bc-panel);
+  border: 2px solid var(--bc-accent);
+  border-radius: 12px;
+  padding: .45em .8em;
+}
+.bc-review-banner[hidden] { display: none; }
+.bc-review-banner span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(11px, .9vw, 17px);
+  font-weight: 900;
+  letter-spacing: .1em;
+  color: var(--bc-accent);
+}
+.bc-review-banner .bc-btn { flex: none; padding: .4em .9em; }
+
+/* The overlay itself: a page, not a dialog — full-screen and scrollable, so
+   it works identically on a phone and a capture. */
+.bc-review {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 20px);
+  padding: clamp(14px, 2vw, 34px);
+  background: var(--bc-bg);
+  color: var(--bc-text);
+}
+.bc-review[hidden] { display: none; }
+.bc-review-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#bc-review-rows {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bc-review-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: baseline;
+  gap: 1em;
+  text-align: left;
+  background: var(--bc-panel);
+  border: 2px solid var(--bc-line);
+  border-radius: 12px;
+  padding: .8em 1em;
+  color: var(--bc-text);
+  font: inherit;
+  font-size: clamp(13px, 1vw, 18px);
+  cursor: pointer;
+}
+.bc-review-row:hover { border-color: var(--bc-dim); }
+.bc-rv-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+.bc-rv-verdict {
+  font-size: .78em;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--bc-dim);
+  white-space: nowrap;
+}
+.bc-rv-score { font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bc-rv-age { color: var(--bc-faint); font-weight: 700; font-size: .85em; white-space: nowrap; }
+.bc-review-empty { color: var(--bc-dim); font-weight: 700; padding: 1em; }
+
+@media (max-width: 620px) {
+  /* No pointer on a phone to reveal the affordance — it is always on, inline
+     in the rail like the start button. */
+  .bc-review-open { opacity: 1; pointer-events: auto; font-size: 11px; }
+  .bc-review { padding: 12px; gap: 10px; }
+  /* Big tap targets: the whole row is the button, title wraps to two lines
+     instead of truncating past readability. */
+  .bc-review-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3em .9em;
+    padding: 14px;
+    font-size: 15px;
+  }
+  .bc-rv-title { flex: 1 1 100%; white-space: normal; }
+}
