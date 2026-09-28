@@ -110,6 +110,11 @@
 
   // ── A one-line banner the board does not own ────────────────────────────
   function renderBanner() {
+    // The demo narrator (static/demo.js) draws the boot card from this same
+    // state; it may load after the first status arrives, so the state is
+    // also parked on window for it to read on start.
+    window.__demoBoot = { text: bootText, ready, failed };
+    window.dispatchEvent(new CustomEvent('demo-boot', { detail: window.__demoBoot }));
     let node = document.getElementById('demo-banner');
     if (!node) {
       node = document.createElement('div');

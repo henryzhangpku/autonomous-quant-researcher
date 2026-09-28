@@ -27,7 +27,7 @@ def main() -> None:
     if SITE.exists():
         shutil.rmtree(SITE)
     SITE.mkdir()
-    for name in ("index.html", "shim.js", "worker.js", "engine.py"):
+    for name in ("index.html", "shim.js", "worker.js", "engine.py", "favicon.svg"):
         shutil.copy2(DEMO / name, SITE / name)
     shutil.copytree(DEMO / "static", SITE / "static")
     with zipfile.ZipFile(SITE / "research.zip", "w", zipfile.ZIP_DEFLATED) as archive:
