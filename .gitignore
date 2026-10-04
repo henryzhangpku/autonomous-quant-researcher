@@ -32,3 +32,4 @@ Thumbs.db
 
 # Demo build output (deployed by the Pages workflow)
 _site/
+research/missions/*/fits/*/filtered.csv.gz

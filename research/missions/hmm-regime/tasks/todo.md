@@ -9,14 +9,14 @@ whether anything goes further.
 - [x] `research/hmm/data.py` reads the lake read-only
 - [x] `research/hmm/features.py`: ret, rvol, range, vol_ratio, EMA-spread trend; standardized on the past only
 - [x] tests: no feature at t depends on candle t+1; truncation equality; standardization strictly before t; warm-up is NaN, never filled; scale-free
-- [ ] review: feature list vs spec, timestamp audit on real BTC candles
+- [x] review: feature list vs spec, timestamp audit on real BTC candles (features start 2021-01-26 after the 500-candle warm-up; no fill)
 
 ## Phase 2: model + filter
 - [x] `research/hmm/model.py`: fit (seed, best of 8 restarts), BIC + OOS selection with the simpler-within-2% rule, labels from statistics, durations, label matching across refits
 - [x] `research/hmm/filter.py`: forward filtering only; next-state probabilities; entropy; live continuation from a prior
 - [x] tests: planted regimes recovered and labelled; simpler model preferred; filtered probabilities independent of future candles; filter != smoother on an overlapping tape; continuation equals whole-series filtering; labels survive a refit
-- [ ] `fit_report.py` on BTC/USD hourly (fit to 2024-01, validate to 2024-07, filter forward): states, matrix, durations, per-state next-candle returns by segment
-- [ ] same on SPY daily
+- [x] `fit_report.py` on BTC/USD hourly (fit to 2024-01, validate to 2024-07, filter forward): states, matrix, durations, per-state next-candle returns by segment -> fits/BTC-USD_hour/REPORT.md
+- [x] same on SPY daily -> fits/SPY_day/REPORT.md
 - [ ] PAUSE: Henry reviews the states before any playbook is written
 
 ## Phase 3: playbooks + switching + sizing + risk

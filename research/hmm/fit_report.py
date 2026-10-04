@@ -50,8 +50,9 @@ def main() -> int:
     val_end = pd.Timestamp(args.val_end, tz="UTC")
     i_fit = int((ts < fit_end).sum())
     i_val = int((ts < val_end).sum())
-    if i_fit < 2000:
-        print(f"fit window too short: {i_fit} rows", file=sys.stderr)
+    min_rows = 700 if args.timeframe == "day" else 2000  # ~3 years of candles
+    if i_fit < min_rows:
+        print(f"fit window too short: {i_fit} rows (< {min_rows})", file=sys.stderr)
         return 1
     fitted = select_and_fit(X[:i_fit], X[i_fit:i_val], raw_ret[:i_fit])
     probs = forward_filter(fitted.startprob, fitted.transmat, fitted.means, fitted.covars, X)
