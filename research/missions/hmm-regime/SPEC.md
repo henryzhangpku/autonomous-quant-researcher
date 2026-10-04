@@ -152,7 +152,52 @@ code; a regime read that is stale or drifting freezes entries rather than
 guessing; parity by construction (server-side logic, every surface reads the
 same state).
 
-## 5. Known risks, stated now
+## 5. Jev in the loop: the FST agent upgrade, specified
+
+Henry (2026-10-04): "i have planned to upgrade FST agent to Jev for a long
+time, since we had the Jev api key... it is good for both speed and cost
+efficient." Borrowed from the article, with our own measurement kept in view:
+on 2026-09-23 Jev showed NO EDGE on entry facts in FST, and its proven role in
+our stack is a one-sided gate and position monitor (it may only add caution).
+So Jev enters this system as a second, fast judgment layer that is TESTED
+against the HMM, not assumed to beat it:
+
+| Judgment | Who answers | Why |
+|---|---|---|
+| What state is the market in, with what probability | HMM (statistical, refit on schedule) | reproducible, auditable, calibrated on our own tape |
+| Is this candle's flow informed or noise; is liquidity stressed; is this setup clean; has execution degraded; urgency to cut inventory | Jev battery (typed Choice/Noul/Score, one call, 70-500 ms) | questions the HMM cannot ask, answered in the budget of one cycle at ~$0.00001 each |
+| Thresholds, size, vetoes, orders | code | never a model |
+| Why a state call was wrong; what to change | nightly reviewer (Opus/Claude) | reasoning, once a day, off the critical path |
+
+Rules carried over from the jevelin doctrine and the article's honest list:
+atomic questions composed in code; one threshold per action scaled to the
+cost of being wrong; Jev answers may only reduce size, widen, hold or veto
+until its calibration record on OUR fills says otherwise; the model version
+is pinned and logged on every response; late past the cycle deadline means
+hold, never a stale decision; Jev unavailable means deterministic fallback.
+
+The backtest therefore runs FOUR arms on identical data, costs and limits,
+which is the real research question of the mission:
+
+1. playbooks switched by the HMM alone
+2. playbooks gated by the Jev battery alone (regime Choice + toxicity Noul + setup Score)
+3. HMM switching + Jev gating
+4. arm 3 + confidence gating (abstain when Jev confidence is below the per-action threshold)
+
+Calibration is verified before sizing on it: reliability curve, Brier and
+ECE of Jev's answers against realized outcomes on our tape; a bent curve
+gets Platt scaling in the policy layer, as the article prescribes. For the
+backtest, Jev is called on historical snapshots (the state engine is
+deterministic, so each snapshot is exactly what live would have sent).
+
+For FST itself this is the upgrade path: the per-cycle LLM brain call at
+entry becomes a Jev battery where the decision is typed (regime, toxicity,
+setup quality, exit urgency), the LLM stays for the nightly review and the
+rare case the battery flags, and the runner reads the result as it reads
+any signal family. Cost and latency per cycle fall by two orders of
+magnitude; nothing about limits or sizing authority moves.
+
+## 6. Known risks, stated now
 
 - HMM state labels are notoriously unstable across refits; the label-matching
   and drift freeze are the defence, and phase 2's review may end the mission.
@@ -161,6 +206,8 @@ same state).
   rejection is a valid and likely outcome.
 - Costs assumed are retail-conservative; the paper phase measures the real
   ones and the backtest must be re-run with them before live.
+- Jev was at capacity on 2026-09-22 and showed no edge on entry facts on
+  2026-09-23; arm 2 may lose to arm 1 and the mission must say so.
 - The "trend feature" and the playbooks are hand-written by the reviewer,
   which the loop's own doctrine (no hand-authored strategy rules) frowns on;
   here they are the prompt's explicit design and are frozen before the
