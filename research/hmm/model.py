@@ -72,9 +72,31 @@ def _fit_once(X: np.ndarray, k: int, seed: int) -> GaussianHMM:
     return m
 
 
-def fit_k(X: np.ndarray, k: int, *, seed: int = SEED, restarts: int = N_RESTARTS) -> GaussianHMM:
-    """Best of `restarts` fits by in-sample log-likelihood; the seed fixes every restart."""
+def _fit_warm(X: np.ndarray, k: int, warm: GaussianHMM) -> GaussianHMM:
+    """Refit initialized from a previous model's parameters (walk-forward refits):
+    the same EM, converging from where the last fit ended instead of from scratch."""
+    m = GaussianHMM(n_components=k, covariance_type="full", n_iter=300, tol=1e-4, init_params="", params="stmc")
+    m.startprob_ = warm.startprob_.copy()
+    m.transmat_ = warm.transmat_.copy()
+    m.means_ = warm.means_.copy()
+    m.covars_ = warm.covars_.copy()
+    m.fit(X)
+    return m
+
+
+def fit_k(X: np.ndarray, k: int, *, seed: int = SEED, restarts: int = N_RESTARTS, warm: GaussianHMM | None = None) -> GaussianHMM:
+    """Best of `restarts` fits by in-sample log-likelihood; the seed fixes every
+    restart. With `warm`, one fit starts from that model's parameters and
+    only `restarts` cold starts compete with it."""
     best, best_ll = None, -np.inf
+    if warm is not None:
+        try:
+            m = _fit_warm(X, k, warm)
+            ll = m.score(X)
+            if np.isfinite(ll):
+                best, best_ll = m, ll
+        except (ValueError, FloatingPointError):
+            pass
     for r in range(restarts):
         try:
             m = _fit_once(X, k, seed + r)
