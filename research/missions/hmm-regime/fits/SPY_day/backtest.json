@@ -1,0 +1,628 @@
+{
+ "symbol": "SPY",
+ "timeframe": "day",
+ "fit_end": "2022-01-01",
+ "val_end": "2023-01-01",
+ "oos_start": "2023-01-03 05:00:00+00:00",
+ "oos_end": "2026-10-01 04:00:00+00:00",
+ "oos_candles": 940,
+ "n_states": 4,
+ "labels": [
+  "CHOP",
+  "CALM_UP",
+  "STRESS",
+  "CRASH"
+ ],
+ "kelly_p": 0.3076923076923077,
+ "kelly_b": 2.0125154377442684,
+ "costs_bps_per_side": 3.0,
+ "per_state": {
+  "CALM_UP": {
+   "candles": 387,
+   "share": 0.4117021276595745,
+   "pnl_bps_per_candle": 5.898662995993613,
+   "time_in_market_fixed": 0.6640826873385013,
+   "next_ret_bps": 6.676667260054217
+  },
+  "CHOP": {
+   "candles": 345,
+   "share": 0.3670212765957447,
+   "pnl_bps_per_candle": -0.12724623179721511,
+   "time_in_market_fixed": 0.14782608695652175,
+   "next_ret_bps": 5.2220179219128635
+  },
+  "CRASH": {
+   "candles": 36,
+   "share": 0.03829787234042553,
+   "pnl_bps_per_candle": 0.0,
+   "time_in_market_fixed": 0.0,
+   "next_ret_bps": 22.852888353831354
+  },
+  "STRESS": {
+   "candles": 172,
+   "share": 0.1829787234042553,
+   "pnl_bps_per_candle": -0.007618193390797975,
+   "time_in_market_fixed": 0.011627906976744186,
+   "next_ret_bps": 10.62668669549389
+  }
+ },
+ "by_year": {
+  "2023": {
+   "pnl": 0.0,
+   "candles": 250
+  },
+  "2024": {
+   "pnl": 0.0,
+   "candles": 252
+  },
+  "2025": {
+   "pnl": 0.0,
+   "candles": 250
+  },
+  "2026": {
+   "pnl": 0.0,
+   "candles": 188
+  }
+ },
+ "switches": 37,
+ "refits": [
+  {
+   "t": "2023-02-15 05:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CALM_UP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2023-03-30 04:00:00+00:00",
+   "frozen": true,
+   "reason": "state CRASH statistics moved beyond 1.0 sigma",
+   "labels": [
+    "CHOP",
+    "CALM_UP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2023-05-12 04:00:00+00:00",
+   "frozen": true,
+   "reason": "state CRASH statistics moved beyond 1.0 sigma",
+   "labels": [
+    "CHOP",
+    "CALM_UP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2023-06-27 04:00:00+00:00",
+   "frozen": true,
+   "reason": "state CRASH statistics moved beyond 1.0 sigma",
+   "labels": [
+    "CHOP",
+    "CALM_UP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2023-08-09 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2023-09-21 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2023-11-02 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2023-12-15 05:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "CRASH",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2024-01-31 05:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "CRASH",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2024-03-14 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "CRASH",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2024-04-26 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2024-06-10 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2024-07-24 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2024-09-05 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2024-10-17 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2024-11-29 05:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.33 L1",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2025-01-15 05:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.34 L1",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2025-02-28 05:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.35 L1",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2025-04-11 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2025-05-27 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2025-07-10 04:00:00+00:00",
+   "frozen": false,
+   "reason": "ok",
+   "labels": [
+    "CHOP",
+    "CRASH",
+    "CALM_UP",
+    "STRESS"
+   ]
+  },
+  {
+   "t": "2025-08-21 04:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.35 L1",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2025-10-03 04:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.35 L1",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2025-11-14 05:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.41 L1",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2025-12-30 05:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.42 L1",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2026-02-12 05:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.37 L1",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2026-03-27 04:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.38 L1",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2026-05-11 04:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.38 L1",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2026-06-24 04:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.37 L1",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2026-08-06 04:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.37 L1",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  },
+  {
+   "t": "2026-09-18 04:00:00+00:00",
+   "frozen": true,
+   "reason": "transition row CRASH moved by 0.37 L1",
+   "labels": [
+    "CALM_UP",
+    "CHOP",
+    "STRESS",
+    "CRASH"
+   ]
+  }
+ ],
+ "frozen_refits": 16,
+ "gates": {
+  "sharpe": false,
+  "max_drawdown": true,
+  "hit_rate": false,
+  "t_stat": false,
+  "beats_buy_hold": false,
+  "beats_best_static": false
+ },
+ "all_gates_pass": false,
+ "gates_by_arm": {
+  "hmm": {
+   "gates": {
+    "sharpe": false,
+    "max_drawdown": true,
+    "hit_rate": false,
+    "t_stat": false,
+    "beats_buy_hold": false,
+    "beats_best_static": false
+   },
+   "all_pass": false
+  },
+  "hmm_fixed": {
+   "gates": {
+    "sharpe": false,
+    "max_drawdown": true,
+    "hit_rate": false,
+    "t_stat": false,
+    "beats_buy_hold": false,
+    "beats_best_static": true
+   },
+   "all_pass": false
+  },
+  "jev_only": {
+   "gates": {
+    "sharpe": false,
+    "max_drawdown": true,
+    "hit_rate": false,
+    "t_stat": false,
+    "beats_buy_hold": false,
+    "beats_best_static": false
+   },
+   "all_pass": false
+  },
+  "hmm_jev": {
+   "gates": {
+    "sharpe": false,
+    "max_drawdown": true,
+    "hit_rate": true,
+    "t_stat": false,
+    "beats_buy_hold": false,
+    "beats_best_static": false
+   },
+   "all_pass": false
+  },
+  "hmm_jev_conf": {
+   "gates": {
+    "sharpe": false,
+    "max_drawdown": true,
+    "hit_rate": true,
+    "t_stat": true,
+    "beats_buy_hold": false,
+    "beats_best_static": false
+   },
+   "all_pass": false
+  }
+ },
+ "mean_size_cap": 0.0,
+ "calibration_last": {
+  "brier": 0.06181756911378196,
+  "ece": 0.03620555774248746,
+  "n": 200,
+  "bins": [
+   [
+    0.4259381019629743,
+    1.0,
+    1
+   ],
+   [
+    0.5331011562298527,
+    0.5,
+    4
+   ],
+   [
+    0.6514389544126664,
+    0.75,
+    4
+   ],
+   [
+    0.7456177157995441,
+    0.7272727272727273,
+    11
+   ],
+   [
+    0.8537757506382305,
+    0.7777777777777778,
+    9
+   ],
+   [
+    0.9897931240564483,
+    0.9590643274853801,
+    171
+   ]
+  ]
+ },
+ "jev": {
+  "calls": 940,
+  "model_versions": [
+   "jev-1.13.0"
+  ]
+ },
+ "results": {
+  "hmm": {
+   "arm": "hmm",
+   "candles": 940,
+   "total_return": 0.0,
+   "ann_return": 0.0,
+   "sharpe": 0.0,
+   "max_drawdown": 0.0,
+   "t_stat": 0.0,
+   "trades": 0,
+   "hit_rate": NaN,
+   "avg_trade_bps": NaN,
+   "costs_paid": 0.0,
+   "time_in_market": 0.0
+  },
+  "hmm_fixed": {
+   "arm": "hmm_fixed",
+   "candles": 940,
+   "total_return": 0.2426073844057881,
+   "ann_return": 0.05996011035689763,
+   "sharpe": 1.0142524795975842,
+   "max_drawdown": 0.0560517117803051,
+   "t_stat": 1.9588885806850582,
+   "trades": 9,
+   "hit_rate": 0.4444444444444444,
+   "avg_trade_bps": 267.79320943475597,
+   "costs_paid": 0.0050999999999999995,
+   "time_in_market": 0.32978723404255317
+  },
+  "trend_only": {
+   "arm": "trend_only",
+   "candles": 940,
+   "total_return": 0.19826921354121851,
+   "ann_return": 0.049685661944649295,
+   "sharpe": 0.6777173862416026,
+   "max_drawdown": 0.07885174157513897,
+   "t_stat": 1.3089175284709476,
+   "trades": 13,
+   "hit_rate": 0.38461538461538464,
+   "avg_trade_bps": 157.07574253528495,
+   "costs_paid": 0.0078,
+   "time_in_market": 0.4308510638297872
+  },
+  "buy_hold": {
+   "arm": "buy_hold",
+   "candles": 940,
+   "total_return": 1.0055242860120845,
+   "ann_return": 0.20509922054199814,
+   "sharpe": 1.335531938219722,
+   "max_drawdown": 0.18998906889856915,
+   "t_stat": 2.579395481445394,
+   "trades": 0,
+   "hit_rate": NaN,
+   "avg_trade_bps": NaN,
+   "costs_paid": 0.0003,
+   "time_in_market": 1.0
+  },
+  "jev_only": {
+   "arm": "jev_only",
+   "candles": 940,
+   "total_return": 0.01187194671759273,
+   "ann_return": 0.003168958496831298,
+   "sharpe": 0.1129530718382252,
+   "max_drawdown": 0.04529606294780053,
+   "t_stat": 0.21815325772236385,
+   "trades": 48,
+   "hit_rate": 0.5416666666666666,
+   "avg_trade_bps": 0.9243225160488241,
+   "costs_paid": 0.025799999999999997,
+   "time_in_market": 0.09361702127659574,
+   "gate_mean": 0.17925531914893617,
+   "gate_zero_share": 0.8117021276595745
+  },
+  "hmm_jev": {
+   "arm": "hmm_jev",
+   "candles": 940,
+   "total_return": -0.002156631793719832,
+   "ann_return": -0.0005786177378600543,
+   "sharpe": -0.023282186235360793,
+   "max_drawdown": 0.024041586045975394,
+   "t_stat": -0.04496632709039692,
+   "trades": 22,
+   "hit_rate": 0.5909090909090909,
+   "avg_trade_bps": -5.610681939982147,
+   "costs_paid": 0.00945,
+   "time_in_market": 0.03723404255319149,
+   "gate_mean": 0.17925531914893617,
+   "gate_zero_share": 0.8117021276595745
+  },
+  "hmm_jev_conf": {
+   "arm": "hmm_jev_conf",
+   "candles": 940,
+   "total_return": 0.06712701382385311,
+   "ann_return": 0.017570059285394235,
+   "sharpe": 1.0742491246121355,
+   "max_drawdown": 0.017641693545099812,
+   "t_stat": 2.0747638140836,
+   "trades": 26,
+   "hit_rate": 0.6153846153846154,
+   "avg_trade_bps": 24.85903752005305,
+   "costs_paid": 0.01515,
+   "time_in_market": 0.036170212765957444,
+   "gate_mean": 0.07340425531914893,
+   "gate_zero_share": 0.926595744680851
+  }
+ }
+}

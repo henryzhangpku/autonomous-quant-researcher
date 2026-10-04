@@ -43,8 +43,9 @@ QUESTIONS = {
     "regime": {"type": "choice", "instructions": "What market regime does this hourly/daily state describe for the next few candles?",
                "criteria": {"trending": None, "mean_reverting": None, "chaotic": None}},
     "clean_setup": {"type": "noul", "instructions": "Is this a clean trend-following setup for the next few candles (trend aligned, volatility normal, volume supportive)?"},
-    "risk_state": {"type": "score", "instructions": "How hostile is this state to holding a trend position?",
-                   "legend": {"0": "benign", "1": "normal", "2": "elevated", "3": "hostile, reduce now"}},
+    # the raw API names a Score's rubric "criteria" (the SDK calls it legend)
+    "risk_state": {"type": "score", "instructions": "How hostile is this state to holding a trend position? 0 benign, 1 normal, 2 elevated, 3 hostile (reduce now)",
+                   "criteria": ["benign", "normal", "elevated", "hostile, reduce now"]},
 }
 
 
@@ -58,10 +59,14 @@ def api_key() -> str | None:
 
 def snapshot(features_row: dict[str, float], ret_1: float, ret_24: float) -> dict[str, Any]:
     """Dense, numeric, strictly from candles <= t (the features are already so)."""
+    def f(v: float, nd: int = 3) -> float:
+        v = float(v)
+        return round(v, nd) if np.isfinite(v) else 0.0  # a non-finite feature is sent as 0, never as NaN
+
     return {
-        "ret_z": round(float(features_row["ret"]), 3), "rvol_z": round(float(features_row["rvol"]), 3), "range_z": round(float(features_row["range"]), 3),
-        "vol_ratio_z": round(float(features_row["vol_ratio"]), 3), "trend_z": round(float(features_row["trend"]), 3),
-        "ret_1_bps": round(float(ret_1) * 1e4, 1), "ret_24_bps": round(float(ret_24) * 1e4, 1),
+        "ret_z": f(features_row["ret"]), "rvol_z": f(features_row["rvol"]), "range_z": f(features_row["range"]),
+        "vol_ratio_z": f(features_row["vol_ratio"]), "trend_z": f(features_row["trend"]),
+        "ret_1_bps": f(float(ret_1) * 1e4, 1), "ret_24_bps": f(float(ret_24) * 1e4, 1),
     }
 
 
@@ -117,7 +122,8 @@ class JevGate:
             if r.status_code == 429 or r.status_code >= 500:
                 time.sleep(2.0 * (attempt + 1))
                 continue
-            r.raise_for_status()
+            if r.status_code >= 400:
+                raise RuntimeError(f"jev: HTTP {r.status_code} {r.text[:300]} for state {body['state']}")
             return r.json()
         raise RuntimeError(f"jev: HTTP {r.status_code} {r.text[:120]}")
 

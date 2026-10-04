@@ -63,7 +63,7 @@ class FittedHMM:
         m.startprob_ = self.startprob.copy()
         m.transmat_ = self.transmat.copy()
         m.means_ = self.means.copy()
-        m.covars_ = self.covars.copy()
+        m.covars_ = _regularized(self.covars)
         return m
 
 
@@ -71,6 +71,18 @@ def _fit_once(X: np.ndarray, k: int, seed: int) -> GaussianHMM:
     m = GaussianHMM(n_components=k, covariance_type="full", n_iter=300, tol=1e-4, random_state=seed)
     m.fit(X)
     return m
+
+
+def _regularized(covars: np.ndarray, eps: float = 1e-6) -> np.ndarray:
+    """Symmetric, positive-definite copies of full covariances (a refit on a
+    thin state can leave one numerically singular, which hmmlearn rejects)."""
+    out = np.array(covars, dtype=float, copy=True)
+    for i in range(out.shape[0]):
+        c = (out[i] + out[i].T) / 2.0
+        w, v = np.linalg.eigh(c)
+        w = np.clip(w, eps, None)
+        out[i] = (v * w) @ v.T
+    return out
 
 
 def _fit_warm(X: np.ndarray, k: int, warm: GaussianHMM) -> GaussianHMM:
@@ -81,7 +93,7 @@ def _fit_warm(X: np.ndarray, k: int, warm: GaussianHMM) -> GaussianHMM:
     m.startprob_ = warm.startprob_.copy()
     m.transmat_ = warm.transmat_.copy()
     m.means_ = warm.means_.copy()
-    m.covars_ = warm.covars_.copy()
+    m.covars_ = _regularized(warm.covars_)
     m.fit(X)
     return m
 
