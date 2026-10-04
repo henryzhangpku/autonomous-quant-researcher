@@ -30,14 +30,14 @@ whether anything goes further.
 - [x] arms: system / fixed-cap diagnostic / static trend / buy-and-hold / Jev only / HMM+Jev / HMM+Jev+confidence (Jev jev-1.13.0, cached per candle, version logged); SPY daily done (REJECTED), BTC hourly running
 - [x] baselines: buy-and-hold, best single static playbook (trend rule without regimes)
 - [x] gates verbatim (code): Sharpe > 1.5, DD < 15%, hit > 55%, t > 2.0, beats both baselines after costs; per state and whole system
-- [ ] RESULTS.md; strategy.md ONLY if the gates pass; otherwise the rejection is the result
+- [x] BACKTEST.md per asset; FINDINGS.md: REJECTED on both assets; no strategy.md written
 
-## Phase 5: calibration + drift + dashboard
+## Phase 5: calibration + drift + dashboard (calibration + drift ran inside the backtest; dashboard and live are NOT built: the gates failed)
 - [ ] per-state Brier / reliability on the backtest; Jev reliability + Platt if bent
 - [ ] drift monitor (state means/vol, transition rows, live log-likelihood)
 - [ ] dashboard from the ledger
 
-## Phase 6: paper (only after phase 4 passes)
+## Phase 6: paper (only after phase 4 passes) -> NOT STARTED, phase 4 failed
 - [ ] Alpaca paper loop on the Mac Mini, Telegram alerts, daily report; runs until paper matches backtest
 
 ## Phase 7: final check
