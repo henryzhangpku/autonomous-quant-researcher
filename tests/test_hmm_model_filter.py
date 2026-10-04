@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from research.hmm.filter import entropy, forward_filter, next_state_probs
-from research.hmm.model import describe, fit_k, label_states, match_labels, select_and_fit
+from research.hmm.model import admissible, describe, fit_k, label_states, match_labels, select_and_fit
 
 
 def _two_regime_tape(n: int = 3000, seed: int = 3):
@@ -103,3 +103,18 @@ def test_labels_follow_statistics_and_survive_a_refit():
     a = describe(fit_k(X[:2000], 2, seed=1), X[:2000], ret[:2000])
     b = describe(fit_k(X, 2, seed=99), X, ret)
     assert sorted(match_labels(a, b)) == sorted(a.labels)
+
+
+def test_a_tail_state_is_not_a_regime():
+    good = ({"state": 0, "share": 0.6, "expected_duration": 12.0}, {"state": 1, "share": 0.4, "expected_duration": 8.0})
+    assert admissible(good) == (True, "ok")
+    thin = good + ({"state": 2, "share": 0.0001, "expected_duration": 1.0},)
+    ok, why = admissible(thin)
+    assert ok is False and "0.01%" in why
+    brief = good + ({"state": 2, "share": 0.1, "expected_duration": 2.0},)
+    ok, why = admissible(brief)
+    assert ok is False and "lasts 2.0" in why
+    X, ret, _ = _two_regime_tape(n=4000)
+    fitted = select_and_fit(X[:3000], X[3000:], ret[:3000], states=(2, 3, 4, 5))
+    assert all("admissible" in r for r in fitted.selection["candidates"])
+    assert all(s["share"] >= 0.02 and s["expected_duration"] >= 3 for s in fitted.state_stats)

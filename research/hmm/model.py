@@ -29,6 +29,12 @@ from hmmlearn.hmm import GaussianHMM
 
 N_RESTARTS = 8
 SIMPLER_TOLERANCE = 0.02
+# Admissibility (spec change approved 2026-10-04 at the phase-2 pause): a
+# state that holds under MIN_STATE_SHARE of the fit candles or whose expected
+# duration is under MIN_DURATION candles is a tail, not a regime; a state
+# count that produces one is rejected.
+MIN_STATE_SHARE = 0.02
+MIN_DURATION = 3.0
 STATE_RANGE = (2, 3, 4, 5)
 SEED = 20261004
 
@@ -139,6 +145,15 @@ def describe(m: GaussianHMM, X: np.ndarray, raw_ret: np.ndarray, *, ll: float | 
     )
 
 
+def admissible(stats: tuple[dict, ...], *, min_share: float = MIN_STATE_SHARE, min_duration: float = MIN_DURATION) -> tuple[bool, str]:
+    for s in stats:
+        if s["share"] < min_share:
+            return False, f"state {s['state']} holds {s['share']:.2%} of candles (< {min_share:.0%})"
+        if s["expected_duration"] < min_duration:
+            return False, f"state {s['state']} lasts {s['expected_duration']:.1f} candles (< {min_duration:g})"
+    return True, "ok"
+
+
 def select_and_fit(X_fit: np.ndarray, X_val: np.ndarray, raw_ret_fit: np.ndarray, *, seed: int = SEED, states=STATE_RANGE) -> FittedHMM:
     """Fit every k, score BIC on the fit window and log-likelihood per
     observation on the validation tail; pick the k whose combined rank is
@@ -153,14 +168,16 @@ def select_and_fit(X_fit: np.ndarray, X_val: np.ndarray, raw_ret_fit: np.ndarray
             continue
         ll = float(m.score(X_fit))
         oos = float(m.score(X_val)) / max(1, len(X_val)) if len(X_val) else float("nan")
-        rows.append({"k": k, "ll": ll, "bic": float(bic(ll, k, d, len(X_fit))), "oos_ll_per_obs": oos})
+        ok, why = admissible(describe(m, X_fit, raw_ret_fit, ll=ll).state_stats)
+        rows.append({"k": k, "ll": ll, "bic": float(bic(ll, k, d, len(X_fit))), "oos_ll_per_obs": oos, "admissible": ok, "note": why})
         models[k] = m
     if not rows:
         raise RuntimeError("no model fitted")
+    candidates = [r for r in rows if r["admissible"]] or rows  # if nothing is admissible, fall back to the raw rule and say so
     # lower BIC is better; higher OOS ll is better. Choose by OOS first, then BIC, with the simplicity tolerance.
-    best_oos = max(rows, key=lambda r: r["oos_ll_per_obs"])
+    best_oos = max(candidates, key=lambda r: r["oos_ll_per_obs"])
     chosen = best_oos
-    for r in sorted(rows, key=lambda r: r["k"]):
+    for r in sorted(candidates, key=lambda r: r["k"]):
         if r["k"] < best_oos["k"] and best_oos["oos_ll_per_obs"] != 0 and abs(best_oos["oos_ll_per_obs"] - r["oos_ll_per_obs"]) <= SIMPLER_TOLERANCE * abs(best_oos["oos_ll_per_obs"]):
             chosen = r
             break
