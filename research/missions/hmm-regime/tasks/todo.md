@@ -27,7 +27,7 @@ whether anything goes further.
 
 ## Phase 4: walk-forward backtest with costs (the gate)
 - [x] 30-day expanding refits (warm-started), label matching, drift freeze
-- [ ] four arms: HMM / Jev battery / both / both + confidence gating (Jev calls on historical snapshots, version pinned)
+- [x] arms: system / fixed-cap diagnostic / static trend / buy-and-hold / Jev only / HMM+Jev / HMM+Jev+confidence (Jev jev-1.13.0, cached per candle, version logged); SPY daily done (REJECTED), BTC hourly running
 - [x] baselines: buy-and-hold, best single static playbook (trend rule without regimes)
 - [x] gates verbatim (code): Sharpe > 1.5, DD < 15%, hit > 55%, t > 2.0, beats both baselines after costs; per state and whole system
 - [ ] RESULTS.md; strategy.md ONLY if the gates pass; otherwise the rejection is the result
