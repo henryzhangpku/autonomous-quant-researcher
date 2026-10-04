@@ -368,13 +368,13 @@ def main() -> int:
         close = candles["close"].to_numpy(dtype=float)[clean.index.to_numpy()]
         cache = MISSION / "fits" / f"{args.symbol.replace('/', '-')}_{args.timeframe}"
         plain = JevGate(args.symbol, args.timeframe, clean, close, cache_dir=cache, confidence_gate=False)
-        conf = JevGate(args.symbol, args.timeframe, clean, close, cache_dir=cache, confidence_gate=True)
+        conf = JevGate(args.symbol, args.timeframe, clean, close, cache_dir=cache, confidence_gate=True).share_cache_with(plain)
         gates = {"jev_only": {"gate": plain, "regime": False, "kelly": False},
                  "hmm_jev": {"gate": plain, "regime": True, "kelly": False},
                  "hmm_jev_conf": {"gate": conf, "regime": True, "kelly": False}}
     res = run_backtest(args.symbol, args.timeframe, fit_end=args.fit_end, val_end=args.val_end, fee_bps=args.fee_bps, slip_bps=args.slip_bps, gates=gates)
     if gates:
-        res["jev"] = {"calls": gates["jev_only"]["gate"].calls, "model_versions": sorted(gates["jev_only"]["gate"].model_versions)}
+        res["jev"] = {"calls": gates["jev_only"]["gate"].calls, "unavailable": gates["jev_only"]["gate"].unavailable, "model_versions": sorted(gates["jev_only"]["gate"].model_versions)}
     out = write_report(res, MISSION / "fits" / f"{args.symbol.replace('/', '-')}_{args.timeframe}")
     print(open(out, encoding="utf-8").read()[:3500])
     return 0

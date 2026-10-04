@@ -46,3 +46,26 @@ def test_gate_caches_answers_and_never_sends_future_data(tmp_path: Path):
     again = JevGate("X/Y", "hour", feats, close, cache_dir=tmp_path, confidence_gate=False, client=fake)
     assert again(30) == 1.0 and len(sent) == 2  # cache survives a new process
     assert again.model_versions == set() and gate.model_versions == {"jev-test"}
+
+
+def test_unavailable_jev_means_hold_and_is_asked_again_later(tmp_path: Path):
+    n = 30
+    ts = pd.date_range("2026-01-01", periods=n, freq="h", tz="UTC")
+    feats = pd.DataFrame({"ts": ts, "ret": 0.0, "rvol": 0.0, "range": 0.0, "vol_ratio": 0.0, "trend": 1.0})
+    close = np.full(n, 100.0)
+    state = {"fail": True, "calls": 0}
+
+    def flaky(body):
+        state["calls"] += 1
+        if state["fail"]:
+            return {"model": None, "answers": None, "unavailable": "ReadTimeout"}
+        return {"model": "jev-test", "answers": _ans()}
+
+    gate = JevGate("X/Y", "hour", feats, close, cache_dir=tmp_path, confidence_gate=False, client=flaky)
+    assert gate(10) == 0.0 and state["calls"] == 1  # hold, not a guess
+    assert not gate.cache_path.exists() or "2026-01-01 10:00" not in gate.cache_path.read_text()
+    state["fail"] = False
+    assert gate(10) == 1.0 and state["calls"] == 2  # asked again once the API is back, then cached
+    assert gate(10) == 1.0 and state["calls"] == 2
+    conf = JevGate("X/Y", "hour", feats, close, cache_dir=tmp_path, confidence_gate=True, client=flaky).share_cache_with(gate)
+    assert conf(10) == 1.0 and state["calls"] == 2  # the shared store answers the second gate

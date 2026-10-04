@@ -107,6 +107,7 @@ class JevGate:
         self.min_interval = min_interval
         self._last = 0.0
         self.calls = 0
+        self.unavailable = 0
         self.model_versions: set[str] = set()
 
     def _http(self, body: dict[str, Any]) -> dict[str, Any]:
@@ -117,15 +118,24 @@ class JevGate:
         if wait > 0:
             time.sleep(wait)
         self._last = time.monotonic()
-        for attempt in range(4):
-            r = requests.post(API, json=body, headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, timeout=30)
+        last_err = "no attempt"
+        for attempt in range(5):
+            try:
+                r = requests.post(API, json=body, headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, timeout=30)
+            except requests.RequestException as exc:  # timeouts, resets: retry, then fall back
+                last_err = f"{type(exc).__name__}"
+                time.sleep(2.0 * (attempt + 1))
+                continue
             if r.status_code == 429 or r.status_code >= 500:
+                last_err = f"HTTP {r.status_code}"
                 time.sleep(2.0 * (attempt + 1))
                 continue
             if r.status_code >= 400:
                 raise RuntimeError(f"jev: HTTP {r.status_code} {r.text[:300]} for state {body['state']}")
             return r.json()
-        raise RuntimeError(f"jev: HTTP {r.status_code} {r.text[:120]}")
+        # Jev unavailable -> deterministic fallback (spec 5: hold, never a stale or invented decision)
+        self.unavailable += 1
+        return {"model": None, "answers": None, "unavailable": last_err}
 
     def answers_for(self, t: int) -> dict[str, Any]:
         ts = str(self.feats["ts"].iloc[t])
@@ -136,6 +146,8 @@ class JevGate:
         ret_24 = float(np.log(self.close[t] / self.close[t - 24])) if t >= 24 else 0.0
         body = {"model": MODEL, "state": snapshot(row, ret_1, ret_24), "questions": QUESTIONS}
         res = self.client(body)
+        if res.get("answers") is None:  # unavailable: not cached, so a later run asks again
+            return {"ts": ts, "model": None, "answers": None, "version": QUESTION_SET_VERSION}
         rec = {"ts": ts, "model": res.get("model"), "answers": res["answers"], "version": QUESTION_SET_VERSION}
         self.cache[ts] = rec
         with self.cache_path.open("a", encoding="utf-8") as fh:
@@ -147,5 +159,14 @@ class JevGate:
 
     def __call__(self, t: int) -> float:
         rec = self.answers_for(t)
+        if rec["answers"] is None:
+            return 0.0  # Jev unavailable: hold (the deterministic fallback), never guess
         m, _reason = multiplier(rec["answers"], confidence_gate=self.confidence_gate)
         return m
+
+    def share_cache_with(self, other: "JevGate") -> "JevGate":
+        """Two gates over the same candles (plain and confidence-gated) read and
+        write ONE answer store, so a candle is asked once."""
+        self.cache = other.cache
+        self.cache_path = other.cache_path
+        return self
