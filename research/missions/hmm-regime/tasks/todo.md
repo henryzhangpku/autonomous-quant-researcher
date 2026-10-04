@@ -17,19 +17,19 @@ whether anything goes further.
 - [x] tests: planted regimes recovered and labelled; simpler model preferred; filtered probabilities independent of future candles; filter != smoother on an overlapping tape; continuation equals whole-series filtering; labels survive a refit
 - [x] `fit_report.py` on BTC/USD hourly (fit to 2024-01, validate to 2024-07, filter forward): states, matrix, durations, per-state next-candle returns by segment -> fits/BTC-USD_hour/REPORT.md
 - [x] same on SPY daily -> fits/SPY_day/REPORT.md
-- [ ] PAUSE: Henry reviews the states before any playbook is written
+- [x] PAUSE: Henry reviewed the states 2026-10-04; approved the admissibility constraint (share >= 2%, duration >= 3) and SIZE-REGULATION playbooks
 
 ## Phase 3: playbooks + switching + sizing + risk
-- [ ] playbooks/CALM_UP.md, CHOP.md, STRESS.md, CRASH.md with entry, exit, stop, TP, max size, invalidation; frozen before the backtest
-- [ ] `switching.py` hysteresis (0.70, hold 3, cooldown, early cut 0.25, uncertain 0.15, stale -> flat) with tests
-- [ ] `sizing.py` quarter-Kelly cap x probability x (1 - entropy); calibration gate (Brier, reliability, ECE < 0.05)
-- [ ] `risk.py` hard limits + kill switch, checked before every order, with tests
+- [x] playbooks/CALM_UP.md, CHOP.md, STRESS.md, CRASH.md with entry, exit, stop, TP, max size, invalidation; frozen before the backtest
+- [x] `switching.py` hysteresis (0.70, hold 3, cooldown, early cut 0.25, uncertain 0.15, stale -> flat) with tests
+- [x] `sizing.py` quarter-Kelly cap x probability x (1 - entropy); calibration gate (Brier, reliability, ECE < 0.05)
+- [x] `risk.py` hard limits + kill switch, checked before every order, with tests
 
 ## Phase 4: walk-forward backtest with costs (the gate)
-- [ ] 30-day expanding refits, label matching, drift freeze
+- [x] 30-day expanding refits (warm-started), label matching, drift freeze
 - [ ] four arms: HMM / Jev battery / both / both + confidence gating (Jev calls on historical snapshots, version pinned)
-- [ ] baselines: buy-and-hold, best single static playbook
-- [ ] gates verbatim: Sharpe > 1.5, DD < 15%, hit > 55%, t > 2.0, beats both baselines after costs; per state and whole system
+- [x] baselines: buy-and-hold, best single static playbook (trend rule without regimes)
+- [x] gates verbatim (code): Sharpe > 1.5, DD < 15%, hit > 55%, t > 2.0, beats both baselines after costs; per state and whole system
 - [ ] RESULTS.md; strategy.md ONLY if the gates pass; otherwise the rejection is the result
 
 ## Phase 5: calibration + drift + dashboard

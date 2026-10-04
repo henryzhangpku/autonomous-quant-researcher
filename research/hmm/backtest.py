@@ -6,11 +6,12 @@ Timeline on one series of candles with past-only features:
                                (state count chosen here)   decisions here
 
 Every REFIT_DAYS of candles the model is refit on an EXPANDING window ending
-at the refit candle (nothing after it), labels are matched to the first
-fit's labels by state statistics, and the filter is re-run with the new
-model over the history up to the refit candle so its state at that candle
-is legitimate; decisions from then on use that model. A refit whose state
-statistics drift beyond tolerance freezes new entries until the next refit.
+at the refit candle (nothing after it), warm-started from the previous
+model, labels matched to the first fit's labels by state statistics, and
+the filter re-run with the new model over the history up to the refit
+candle so its state at that candle is legitimate; decisions from then on
+use that model. A refit whose state statistics drift beyond tolerance
+freezes new entries until the next refit.
 
 Per candle, in order (all pure functions): switching step -> size cap from
 sizing (Kelly p/b measured on the fit window's base-strategy trades; the
@@ -19,16 +20,19 @@ RISK check -> position. P&L = position_t x ret_{t+1}; costs = (fee +
 slippage) x |position change| in notional terms, charged on the candle the
 change happens.
 
-Arms (identical data, costs, limits):
-    hmm        : the system (arm 1 of the spec)
-    trend_only : the base strategy with multiplier 1, no regime (best static playbook)
-    buy_hold   : fully invested
-Jev arms (2-4) plug in through `gate_fn`, a callable returning a multiplier
-per candle from a snapshot; absent, they are reported as not run.
+Arms (identical data, costs, limits), all driven by the same filtered
+probabilities and switching decisions:
+    hmm         the system (spec arm 1): regime x Kelly sizing
+    hmm_fixed   diagnostic: regime multipliers on a fixed cap of 1, no Kelly,
+                so the regime layer is visible even when Kelly says f* <= 0
+    trend_only  the base rule with no regime (best static playbook)
+    buy_hold    fully invested
+    + any gated arms passed in (Jev arms 2-4): {"name": {"gate": fn(t)->mult, "regime": bool, "kelly": bool}}
 
 Gates (verbatim from the prompt, on the out-of-sample segment): Sharpe >
 1.5, max drawdown < 15%, hit rate > 55%, t-stat > 2.0, beats buy-and-hold
-AND the best static strategy after costs. All must pass.
+AND the best static strategy after costs. All must pass. Evaluated on the
+system arm for the verdict and reported for every other arm.
 """
 
 from __future__ import annotations
@@ -49,7 +53,7 @@ from research.hmm.filter import entropy, forward_filter
 from research.hmm.model import FittedHMM, describe, fit_k, match_labels, select_and_fit
 from research.hmm.playbooks import BookState, decide
 from research.hmm.risk import RiskLimits, RiskState, check, roll_day
-from research.hmm.sizing import CALIBRATION_WINDOW, calibration, kelly_fraction, size_cap
+from research.hmm.sizing import CALIBRATION_WINDOW, calibration, size_cap
 from research.hmm.switching import SwitchState, step
 
 MISSION = Path(__file__).resolve().parents[1] / "missions" / "hmm-regime"
@@ -65,13 +69,14 @@ class ArmResult:
     position: np.ndarray
     pnl: np.ndarray
     costs: np.ndarray
-    trades: list[float] = field(default_factory=list)  # per round-trip return
+    trades: list[float] = field(default_factory=list)
     states: list[str | None] = field(default_factory=list)
 
     def metrics(self, candles_per_year: float) -> dict:
         r = self.pnl
         n = len(r)
-        mean, sd = float(r.mean()), float(r.std(ddof=1)) if n > 1 else 0.0
+        mean = float(r.mean())
+        sd = float(r.std(ddof=1)) if n > 1 else 0.0
         sharpe = (mean / sd) * math.sqrt(candles_per_year) if sd > 0 else 0.0
         t = (mean / sd) * math.sqrt(n) if sd > 0 else 0.0
         eq = self.equity
@@ -95,14 +100,14 @@ def cooldown_for(timeframe: str) -> int:
     return {"hour": 6, "day": 3}[timeframe]
 
 
-def _base_strategy_pb(trend_z: np.ndarray, ret_next: np.ndarray, rvol: np.ndarray, close: np.ndarray) -> tuple[float, float]:
+def _base_strategy_pb(trend_z: np.ndarray, rvol: np.ndarray, close: np.ndarray) -> tuple[float, float]:
     """Measured p (win rate) and b (avg win / avg loss) of the base TREND rule on a window."""
     book = BookState()
     trades: list[float] = []
     entry = None
     for i in range(len(trend_z)):
         prev = book.position
-        book, order = decide(book, close=float(close[i]), rvol=float(rvol[i]), trend_z=float(trend_z[i]), state="CALM_UP", size_cap=1.0)
+        book, _order = decide(book, close=float(close[i]), rvol=float(rvol[i]), trend_z=float(trend_z[i]), state="CALM_UP", size_cap=1.0)
         if prev == 0 and book.position > 0:
             entry = float(close[i])
         elif prev > 0 and book.position == 0 and entry:
@@ -110,8 +115,8 @@ def _base_strategy_pb(trend_z: np.ndarray, ret_next: np.ndarray, rvol: np.ndarra
             entry = None
     if len(trades) < 10:
         return 0.5, 1.0
-    wins = [t for t in trades if t > 0]
-    losses = [-t for t in trades if t <= 0]
+    wins = [x for x in trades if x > 0]
+    losses = [-x for x in trades if x <= 0]
     p = len(wins) / len(trades)
     b = (np.mean(wins) / np.mean(losses)) if wins and losses and np.mean(losses) > 0 else 1.0
     return float(p), float(b)
@@ -127,7 +132,6 @@ def _drifted(first: FittedHMM, current: FittedHMM, labels_now: tuple[str, ...]) 
         cur = current.state_stats[i]
         if abs(cur["mean_ret"] - ref["mean_ret"]) > DRIFT_SIGMA * pooled_sigma or abs(cur["vol"] - ref["vol"]) > DRIFT_SIGMA * pooled_sigma:
             return True, f"state {lab} statistics moved beyond {DRIFT_SIGMA} sigma"
-    # transition rows, matched by label
     order_first = {lab: i for i, lab in enumerate(first.labels)}
     for i, lab in enumerate(labels_now):
         row_now = np.array([current.transmat[i, j] for j, _ in enumerate(labels_now)])
@@ -138,7 +142,7 @@ def _drifted(first: FittedHMM, current: FittedHMM, labels_now: tuple[str, ...]) 
 
 
 def run_backtest(symbol: str, timeframe: str, *, fit_end: str, val_end: str, fee_bps: float, slip_bps: float, refit_days: int = 30,
-                 capital: float = 100_000.0, gate_fn=None, limits: RiskLimits | None = None) -> dict:
+                 capital: float = 100_000.0, gates: dict[str, dict] | None = None, limits: RiskLimits | None = None) -> dict:
     candles = load_candles(symbol, timeframe)
     feats = build_features(candles)
     clean = feats.dropna(subset=FEATURES)
@@ -160,30 +164,35 @@ def run_backtest(symbol: str, timeframe: str, *, fit_end: str, val_end: str, fee
     n = len(X)
     first = select_and_fit(X[:i_fit], X[i_fit:i_val], ret[:i_fit])
     k = first.n_states
-    kelly_p, kelly_b = _base_strategy_pb(trend_z[:i_fit], ret_next[:i_fit], rvol_raw[:i_fit], close[:i_fit])
+    kelly_p, kelly_b = _base_strategy_pb(trend_z[:i_fit], rvol_raw[:i_fit], close[:i_fit])
 
-    # arms
-    arms = {name: {"equity": np.ones(n) * capital, "position": np.zeros(n), "pnl": np.zeros(n), "costs": np.zeros(n), "trades": [], "states": [None] * n}
-            for name in ("hmm", "trend_only", "buy_hold")}
-    books = {"hmm": BookState(), "trend_only": BookState()}
-    entries = {"hmm": None, "trend_only": None}
+    arm_cfg: dict[str, tuple] = {
+        "hmm": (True, True, None),
+        "hmm_fixed": (True, False, None),
+        "trend_only": (False, False, None),
+        "buy_hold": (None, None, None),
+    }
+    for name, g in (gates or {}).items():
+        arm_cfg[name] = (g.get("regime", True), g.get("kelly", True), g["gate"])
+    first_day = str(ts.iloc[i_val].date())
+    arms = {name: {"equity": np.ones(n) * capital, "position": np.zeros(n), "pnl": np.zeros(n), "costs": np.zeros(n), "trades": [], "states": [None] * n,
+                   "book": BookState(), "entry": None, "risk": RiskState(equity_high=capital, day_start_equity=capital, day=first_day), "gate_log": []}
+            for name in arm_cfg}
     sw = SwitchState()
-    risk = RiskState(equity_high=capital, day_start_equity=capital, day=str(ts.iloc[i_val].date()))
     model = first
     labels = first.labels
     warm = first.to_hmmlearn()
-    probs_hist = forward_filter(model.startprob, model.transmat, model.means, model.covars, X[:i_val])
-    prior = probs_hist[-1]
+    prior = forward_filter(model.startprob, model.transmat, model.means, model.covars, X[:i_val])[-1]
     frozen, frozen_reason = False, ""
-    refit_log = []
+    refit_log: list[dict] = []
     decisions_pred: list[float] = []
     decisions_real: list[float] = []
     last_active_idx: int | None = None
     switches = 0
-    size_log = []
+    size_log: list[float] = []
+    cal = None
 
     for t in range(i_val, n - 1):
-        # refit on schedule, expanding window ending at t (nothing after t)
         if (t - i_val) % refit_every == 0 and t > i_val:
             try:
                 m = fit_k(X[:t], k, warm=warm, restarts=1)
@@ -192,8 +201,7 @@ def run_backtest(symbol: str, timeframe: str, *, fit_end: str, val_end: str, fee
                 labels = match_labels(first, cur)
                 model = FittedHMM(**{**cur.__dict__, "labels": labels})
                 frozen, frozen_reason = _drifted(first, model, labels)
-                hist = forward_filter(model.startprob, model.transmat, model.means, model.covars, X[:t])
-                prior = hist[-1]
+                prior = forward_filter(model.startprob, model.transmat, model.means, model.covars, X[:t])[-1]
                 refit_log.append({"t": str(ts.iloc[t]), "frozen": frozen, "reason": frozen_reason, "labels": labels})
             except Exception as exc:  # noqa: BLE001
                 frozen, frozen_reason = True, f"refit failed: {exc}"
@@ -205,7 +213,6 @@ def run_backtest(symbol: str, timeframe: str, *, fit_end: str, val_end: str, fee
         sw, d = step(sw, row, labels, nxt, index=t, cooldown=cooldown_for(timeframe))
         if d.switched:
             switches += 1
-        # calibration record: P(active) at t vs whether argmax persists at t+1 (resolved next candle)
         if last_active_idx is not None:
             decisions_real.append(1.0 if int(np.argmax(row)) == last_active_idx else 0.0)
         last_active_idx = int(np.argmax(row))
@@ -213,101 +220,122 @@ def run_backtest(symbol: str, timeframe: str, *, fit_end: str, val_end: str, fee
         pred_resolved = decisions_pred[:len(decisions_real)]
         cal = calibration(np.array(pred_resolved[-CALIBRATION_WINDOW:]), np.array(decisions_real[-CALIBRATION_WINDOW:])) if len(decisions_real) >= 20 else None
         calibrated = bool(cal and cal.ok)
-        gate_mult = 1.0 if gate_fn is None else float(gate_fn(t))
-        cap = size_cap(p_active=float(row.max()), entropy=ent, kelly_p=kelly_p, kelly_b=kelly_b, calibrated=calibrated, switch_multiplier=d.size_multiplier * gate_mult)
-        if frozen and books["hmm"].position == 0:
-            cap = 0.0  # drift freeze: no NEW entries
         day = str(ts.iloc[t].date())
-        eq_prev = arms["hmm"]["equity"][t - 1] if t > 0 else capital
-        roll_day(risk, day, eq_prev)
-        # hmm arm
-        book, order = decide(books["hmm"], close=float(close[t]), rvol=float(rvol_raw[t]), trend_z=float(trend_z[t]), state=d.active, size_cap=cap)
-        verdict = check(risk, limits, requested_position=order.target_position, active_state=d.active, equity=eq_prev, stale_candles=0, notional=eq_prev)
-        pos = verdict.allowed_position if verdict.action in ("ok", "cap", "approval") else 0.0
-        if pos != book.position:
-            book = BookState(position=pos, entry_price=book.entry_price, stop_price=book.stop_price, stopped_out=book.stopped_out)
-        books["hmm"] = book
-        size_log.append(cap)
-        # trend-only arm
-        tbook, torder = decide(books["trend_only"], close=float(close[t]), rvol=float(rvol_raw[t]), trend_z=float(trend_z[t]), state="CALM_UP", size_cap=1.0)
-        books["trend_only"] = tbook
-        for name, position in (("hmm", pos), ("trend_only", tbook.position), ("buy_hold", 1.0)):
+        for name, (use_regime, use_kelly, gate) in arm_cfg.items():
             a = arms[name]
             prev_pos = a["position"][t - 1] if t > i_val else 0.0
+            eq_prev = a["equity"][t - 1] if t > i_val else capital
+            if use_regime is None:
+                position = 1.0
+                active = d.active
+            else:
+                gate_mult = 1.0 if gate is None else float(gate(t))
+                if gate is not None:
+                    a["gate_log"].append(gate_mult)
+                if use_regime:
+                    active, switch_mult = d.active, d.size_multiplier
+                else:
+                    active, switch_mult = "CALM_UP", 1.0
+                if use_kelly:
+                    cap = size_cap(p_active=float(row.max()), entropy=ent, kelly_p=kelly_p, kelly_b=kelly_b, calibrated=calibrated, switch_multiplier=switch_mult * gate_mult)
+                else:
+                    cap = 1.0 * switch_mult * gate_mult
+                if use_regime and frozen and a["book"].position == 0:
+                    cap = 0.0
+                if name == "hmm":
+                    size_log.append(cap)
+                roll_day(a["risk"], day, eq_prev)
+                book, order = decide(a["book"], close=float(close[t]), rvol=float(rvol_raw[t]), trend_z=float(trend_z[t]), state=active, size_cap=cap)
+                verdict = check(a["risk"], limits, requested_position=order.target_position, active_state=active, equity=eq_prev, stale_candles=0, notional=eq_prev)
+                position = verdict.allowed_position if verdict.action in ("ok", "cap", "approval") else 0.0
+                if position != book.position:
+                    book = BookState(position=position, entry_price=book.entry_price, stop_price=book.stop_price, stopped_out=book.stopped_out)
+                a["book"] = book
             cost = cost_rate * abs(position - prev_pos)
             pnl = position * (math.exp(ret_next[t]) - 1) - cost
             a["position"][t] = position
             a["costs"][t] = cost
             a["pnl"][t] = pnl
-            a["equity"][t] = (a["equity"][t - 1] if t > i_val else capital) * (1 + pnl)
-            a["states"][t] = d.active
-            if name in entries:
+            a["equity"][t] = eq_prev * (1 + pnl)
+            a["states"][t] = active
+            if use_regime is not None:
                 if prev_pos == 0 and position > 0:
-                    entries[name] = float(close[t])
-                elif prev_pos > 0 and position == 0 and entries[name]:
-                    a["trades"].append(float(close[t]) / entries[name] - 1 - 2 * cost_rate)
-                    entries[name] = None
+                    a["entry"] = float(close[t])
+                elif prev_pos > 0 and position == 0 and a["entry"]:
+                    a["trades"].append(float(close[t]) / a["entry"] - 1 - 2 * cost_rate)
+                    a["entry"] = None
+
     sl = slice(i_val, n - 1)
-    results = {}
+    results: dict[str, dict] = {}
     for name, a in arms.items():
         res = ArmResult(name, a["equity"][sl], a["position"][sl], a["pnl"][sl], a["costs"][sl], a["trades"], a["states"][sl])
         results[name] = res.metrics(cpy)
         results[name]["equity_curve"] = res.equity
         results[name]["states"] = res.states
         results[name]["pnl_series"] = res.pnl
-    # per-state P&L of the system
+        if a["gate_log"]:
+            results[name]["gate_mean"] = float(np.mean(a["gate_log"]))
+            results[name]["gate_zero_share"] = float(np.mean(np.array(a["gate_log"]) == 0.0))
     st = np.array(arms["hmm"]["states"][sl], dtype=object)
     per_state = {}
     for lab in sorted({s for s in st if s}, key=str):
         mask = st == lab
-        per_state[lab] = {"candles": int(mask.sum()), "share": float(mask.mean()), "pnl_bps_per_candle": float(arms["hmm"]["pnl"][sl][mask].mean() * 1e4), "time_in_market": float((arms["hmm"]["position"][sl][mask] > 0).mean())}
+        per_state[lab] = {"candles": int(mask.sum()), "share": float(mask.mean()), "pnl_bps_per_candle": float(arms["hmm_fixed"]["pnl"][sl][mask].mean() * 1e4),
+                          "time_in_market_fixed": float((arms["hmm_fixed"]["position"][sl][mask] > 0).mean()), "next_ret_bps": float(np.nanmean(ret_next[sl][mask]) * 1e4)}
     years = pd.Series(arms["hmm"]["pnl"][sl], index=ts.iloc[sl].to_numpy()).groupby(lambda x: x.year).agg(["sum", "count"])
-    gates = {}
-    m = results["hmm"]
-    gates["sharpe"] = m["sharpe"] > GATES["sharpe"]
-    gates["max_drawdown"] = m["max_drawdown"] < GATES["max_drawdown"]
-    gates["hit_rate"] = (m["hit_rate"] > GATES["hit_rate"]) if not math.isnan(m["hit_rate"]) else False
-    gates["t_stat"] = m["t_stat"] > GATES["t_stat"]
-    gates["beats_buy_hold"] = m["total_return"] > results["buy_hold"]["total_return"]
-    gates["beats_best_static"] = m["total_return"] > results["trend_only"]["total_return"]
+
+    def gate_eval(m: dict) -> dict:
+        return {"sharpe": m["sharpe"] > GATES["sharpe"], "max_drawdown": m["max_drawdown"] < GATES["max_drawdown"],
+                "hit_rate": (m["hit_rate"] > GATES["hit_rate"]) if not math.isnan(m["hit_rate"]) else False, "t_stat": m["t_stat"] > GATES["t_stat"],
+                "beats_buy_hold": m["total_return"] > results["buy_hold"]["total_return"], "beats_best_static": m["total_return"] > results["trend_only"]["total_return"]}
+
+    gate_results = {name: gate_eval(results[name]) for name in results if name not in ("buy_hold", "trend_only")}
+    verdict_gates = gate_results["hmm"]
     return {
         "symbol": symbol, "timeframe": timeframe, "fit_end": fit_end, "val_end": val_end, "oos_start": str(ts.iloc[i_val]), "oos_end": str(ts.iloc[n - 2]),
         "oos_candles": int(n - 1 - i_val), "n_states": k, "labels": first.labels, "kelly_p": kelly_p, "kelly_b": kelly_b, "costs_bps_per_side": fee_bps + slip_bps,
         "results": results, "per_state": per_state, "by_year": {int(y): {"pnl": float(v["sum"]), "candles": int(v["count"])} for y, v in years.iterrows()},
-        "switches": switches, "refits": refit_log, "frozen_refits": sum(1 for r in refit_log if r["frozen"]), "gates": gates, "all_gates_pass": all(gates.values()),
+        "switches": switches, "refits": refit_log, "frozen_refits": sum(1 for r in refit_log if r["frozen"]), "gates": verdict_gates,
+        "all_gates_pass": all(verdict_gates.values()), "gates_by_arm": {name: {"gates": g, "all_pass": all(g.values())} for name, g in gate_results.items()},
         "mean_size_cap": float(np.mean(size_log)) if size_log else 0.0, "calibration_last": cal.__dict__ if cal else None,
     }
+
+
+def _tbl(rows: list[dict]) -> str:
+    if not rows:
+        return "(none)\n"
+    cols = list(rows[0].keys())
+    out = ["| " + " | ".join(cols) + " |", "|" + "|".join("---" for _ in cols) + "|"]
+    for r in rows:
+        out.append("| " + " | ".join(str(r.get(c, "")) for c in cols) + " |")
+    return "\n".join(out) + "\n"
 
 
 def write_report(res: dict, out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     rows = []
-    for name in ("hmm", "trend_only", "buy_hold"):
-        m = res["results"][name]
+    for name, m in res["results"].items():
         rows.append({"arm": name, "total_return": f"{m['total_return']:+.1%}", "ann_return": f"{m['ann_return']:+.1%}", "sharpe": f"{m['sharpe']:.2f}", "max_dd": f"{m['max_drawdown']:.1%}",
-                     "t_stat": f"{m['t_stat']:.2f}", "trades": m["trades"], "hit_rate": "" if math.isnan(m["hit_rate"]) else f"{m['hit_rate']:.1%}", "avg_trade_bps": "" if math.isnan(m["avg_trade_bps"]) else f"{m['avg_trade_bps']:+.0f}",
-                     "costs_paid": f"{m['costs_paid']:.3f}", "time_in_mkt": f"{m['time_in_market']:.0%}"})
-    def tbl(rs):
-        if not rs:
-            return "(none)\n"
-        cols = list(rs[0].keys())
-        out = ["| " + " | ".join(cols) + " |", "|" + "|".join("---" for _ in cols) + "|"]
-        for r in rs:
-            out.append("| " + " | ".join(str(r[c]) for c in cols) + " |")
-        return "\n".join(out) + "\n"
+                     "t_stat": f"{m['t_stat']:.2f}", "trades": m["trades"], "hit_rate": "" if math.isnan(m["hit_rate"]) else f"{m['hit_rate']:.1%}",
+                     "avg_trade_bps": "" if math.isnan(m["avg_trade_bps"]) else f"{m['avg_trade_bps']:+.0f}", "costs_paid": f"{m['costs_paid']:.3f}", "time_in_mkt": f"{m['time_in_market']:.0%}",
+                     "gate_mean": f"{m['gate_mean']:.2f}" if "gate_mean" in m else ""})
     g = res["gates"]
-    gate_rows = [{"gate": k, "threshold": (f"> {GATES[k]}" if k in ("sharpe", "t_stat", "hit_rate") else (f"< {GATES[k]}" if k == "max_drawdown" else "after costs")), "passed": "PASS" if v else "FAIL"} for k, v in g.items()]
+    thresholds = {"sharpe": f"> {GATES['sharpe']}", "max_drawdown": f"< {GATES['max_drawdown']}", "hit_rate": f"> {GATES['hit_rate']}", "t_stat": f"> {GATES['t_stat']}", "beats_buy_hold": "after costs", "beats_best_static": "after costs"}
+    gate_rows = [{"gate": k, "threshold": thresholds[k], "passed": "PASS" if v else "FAIL"} for k, v in g.items()]
+    by_arm = [{"arm": k, **{gg: ("PASS" if vv else "FAIL") for gg, vv in val["gates"].items()}, "all": "PASS" if val["all_pass"] else "FAIL"} for k, val in res.get("gates_by_arm", {}).items()]
     md = [f"# Walk-forward backtest: {res['symbol']} {res['timeframe']}\n",
           f"Generated {datetime.now(timezone.utc).isoformat(timespec='minutes')}. Out of sample {res['oos_start'][:10]} to {res['oos_end'][:10]} ({res['oos_candles']:,} candles) after fit to {res['fit_end']} and validation to {res['val_end']}. "
           f"{res['n_states']} states ({', '.join(res['labels'])}); refits every 30 days on an expanding window, {len(res['refits'])} refits of which {res['frozen_refits']} froze entries for drift. "
-          f"Costs {res['costs_bps_per_side']:.0f} bps per side. Base-strategy Kelly inputs measured on the fit window: p={res['kelly_p']:.2f}, b={res['kelly_b']:.2f}. Mean size cap {res['mean_size_cap']:.2f}; state switches {res['switches']}.\n",
-          "## Arms (identical data, costs, limits)\n", tbl(rows),
-          "## Gates (verbatim), on the HMM arm out of sample\n", tbl(gate_rows),
+          f"Costs {res['costs_bps_per_side']:.0f} bps per side. Base-strategy Kelly inputs measured on the fit window: p={res['kelly_p']:.2f}, b={res['kelly_b']:.2f} (f* = {(res['kelly_b'] * res['kelly_p'] - (1 - res['kelly_p'])) / max(res['kelly_b'], 1e-9):+.3f}). "
+          f"Mean size cap of the system {res['mean_size_cap']:.2f}; state switches {res['switches']}.\n",
+          "## Arms (identical data, costs, limits)\n", _tbl(rows),
+          "## Gates (verbatim), on the system arm out of sample\n", _tbl(gate_rows),
           f"**{'ALL GATES PASS' if res['all_gates_pass'] else 'REJECTED: the system does not clear its own gates'}.**\n",
-          "## System P&L by state (out of sample)\n", tbl([{"state": k, **{kk: (f"{vv:.3f}" if isinstance(vv, float) else vv) for kk, vv in v.items()}} for k, v in res["per_state"].items()]),
-          "## System P&L by year\n", tbl([{"year": y, "pnl": f"{v['pnl']:+.3f}", "candles": v["candles"]} for y, v in res["by_year"].items()]),
-          "## Refits\n", tbl([{"t": r["t"][:10], "frozen": r["frozen"], "reason": r["reason"]} for r in res["refits"]][:60]),
-          ]
+          "## Gates by arm\n", _tbl(by_arm),
+          "## By state (out of sample): share, the fixed-cap arm's P&L while in the state, and the raw next-candle return\n",
+          _tbl([{"state": k, **{kk: (f"{vv:.3f}" if isinstance(vv, float) else vv) for kk, vv in v.items()}} for k, v in res["per_state"].items()]),
+          "## System P&L by year\n", _tbl([{"year": y, "pnl": f"{v['pnl']:+.3f}", "candles": v["candles"]} for y, v in res["by_year"].items()]),
+          "## Refits\n", _tbl([{"t": r["t"][:10], "frozen": r["frozen"], "reason": r["reason"]} for r in res["refits"]][:60])]
     if res.get("calibration_last"):
         c = res["calibration_last"]
         md.append(f"Last rolling calibration of P(active state) vs persistence: Brier {c['brier']:.3f}, ECE {c['ece']:.3f}, n {c['n']} ({'calibrated' if c['ece'] <= 0.05 and c['n'] >= 200 else 'NOT calibrated: sizing stayed at the floor'}).\n")
@@ -328,10 +356,27 @@ def main() -> int:
     ap.add_argument("--val-end", required=True)
     ap.add_argument("--fee-bps", type=float, default=10.0)
     ap.add_argument("--slip-bps", type=float, default=5.0)
+    ap.add_argument("--jev", action="store_true", help="add the three Jev arms (calls the API; cached)")
     args = ap.parse_args()
-    res = run_backtest(args.symbol, args.timeframe, fit_end=args.fit_end, val_end=args.val_end, fee_bps=args.fee_bps, slip_bps=args.slip_bps)
+    gates = None
+    if args.jev:
+        from research.hmm.jev_gate import JevGate
+
+        candles = load_candles(args.symbol, args.timeframe)
+        feats = build_features(candles)
+        clean = feats.dropna(subset=FEATURES)
+        close = candles["close"].to_numpy(dtype=float)[clean.index.to_numpy()]
+        cache = MISSION / "fits" / f"{args.symbol.replace('/', '-')}_{args.timeframe}"
+        plain = JevGate(args.symbol, args.timeframe, clean, close, cache_dir=cache, confidence_gate=False)
+        conf = JevGate(args.symbol, args.timeframe, clean, close, cache_dir=cache, confidence_gate=True)
+        gates = {"jev_only": {"gate": plain, "regime": False, "kelly": False},
+                 "hmm_jev": {"gate": plain, "regime": True, "kelly": False},
+                 "hmm_jev_conf": {"gate": conf, "regime": True, "kelly": False}}
+    res = run_backtest(args.symbol, args.timeframe, fit_end=args.fit_end, val_end=args.val_end, fee_bps=args.fee_bps, slip_bps=args.slip_bps, gates=gates)
+    if gates:
+        res["jev"] = {"calls": gates["jev_only"]["gate"].calls, "model_versions": sorted(gates["jev_only"]["gate"].model_versions)}
     out = write_report(res, MISSION / "fits" / f"{args.symbol.replace('/', '-')}_{args.timeframe}")
-    print(open(out, encoding="utf-8").read()[:3000])
+    print(open(out, encoding="utf-8").read()[:3500])
     return 0
 
 

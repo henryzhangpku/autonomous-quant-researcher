@@ -59,6 +59,7 @@ class FittedHMM:
 
     def to_hmmlearn(self) -> GaussianHMM:
         m = GaussianHMM(n_components=self.n_states, covariance_type="full", init_params="")
+        m.n_features = int(self.means.shape[1])
         m.startprob_ = self.startprob.copy()
         m.transmat_ = self.transmat.copy()
         m.means_ = self.means.copy()
@@ -76,6 +77,7 @@ def _fit_warm(X: np.ndarray, k: int, warm: GaussianHMM) -> GaussianHMM:
     """Refit initialized from a previous model's parameters (walk-forward refits):
     the same EM, converging from where the last fit ended instead of from scratch."""
     m = GaussianHMM(n_components=k, covariance_type="full", n_iter=300, tol=1e-4, init_params="", params="stmc")
+    m.n_features = int(X.shape[1])  # hmmlearn needs this set when nothing is initialised from data
     m.startprob_ = warm.startprob_.copy()
     m.transmat_ = warm.transmat_.copy()
     m.means_ = warm.means_.copy()

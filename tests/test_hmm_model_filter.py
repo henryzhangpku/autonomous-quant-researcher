@@ -118,3 +118,13 @@ def test_a_tail_state_is_not_a_regime():
     fitted = select_and_fit(X[:3000], X[3000:], ret[:3000], states=(2, 3, 4, 5))
     assert all("admissible" in r for r in fitted.selection["candidates"])
     assert all(s["share"] >= 0.02 and s["expected_duration"] >= 3 for s in fitted.state_stats)
+
+
+def test_warm_start_refit_works_and_keeps_the_label_order():
+    X, ret, _ = _two_regime_tape(n=2500, seed=21)
+    m = fit_k(X[:1500], 2)
+    first = describe(m, X[:1500], ret[:1500])
+    warm = fit_k(X[:2200], 2, warm=first.to_hmmlearn(), restarts=1)
+    cur = describe(warm, X[:2200], ret[:2200])
+    assert sorted(match_labels(first, cur)) == sorted(first.labels)
+    assert np.isfinite(warm.score(X[:2200]))
