@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GPU Leads Revisions</title>
+  <meta name="description" content="A pre-registered research campaign: do GPU rental prices lead consensus estimate revisions? Locked into a hash-chained ledger before its data exists, fed live by a public GPU rental price index, judged once when the data lands.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="GPU Leads Revisions: a pre-registered campaign">
+  <meta property="og:description" content="An investment idea locked into an auditable test before its data exists, fed live by a public GPU rental price index. No results yet, by design.">
+  <meta property="og:url" content="https://henryzhangpku.github.io/autonomous-quant-researcher/gpu-campaign.html">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="static/campaign.css">
+  <script src="static/campaign.js" defer></script>
+</head>
+<body>
+  <header class="cp-band">
+    <div class="cp-mark" aria-hidden="true">α</div>
+    <div class="cp-brand">
+      <b>GPU LEADS REVISIONS</b>
+      <span>PRE-REGISTERED CAMPAIGN · AUTONOMOUS QUANT RESEARCHER</span>
+    </div>
+    <a class="cp-back" href="./">← the research loop demo</a>
+  </header>
+
+  <main class="cp-main">
+    <section class="cp-hero">
+      <p class="cp-kicker">AN IDEA LOCKED INTO A TEST BEFORE ITS DATA EXISTS</p>
+      <h1>Do GPU rental prices lead estimate revisions for AI-infrastructure stocks?</h1>
+      <p class="cp-lede" id="cp-hypothesis"></p>
+      <div class="cp-verdict" id="cp-verdict" role="status">
+        <i aria-hidden="true"></i>
+        <div>
+          <b id="cp-verdict-title">Loading the snapshot…</b>
+          <span id="cp-verdict-text"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="cp-panel" aria-labelledby="cp-ledger-h">
+      <h2 id="cp-ledger-h"><span class="cp-step">1</span> Frozen into the ledger</h2>
+      <p class="cp-note">The specification, the document and the code that will compute the verdict are
+        bound by SHA-256 into one hash-chained ledger event. Edit any of them and verification fails.
+        The hash proves <em>what</em> was frozen; the event time and the commit that added it prove <em>when</em>.</p>
+      <dl class="cp-hashes" id="cp-hashes"></dl>
+      <pre class="cp-cmd">uv run python -m research.prereg.gpu_leads_revisions verify</pre>
+    </section>
+
+    <section class="cp-panel" aria-labelledby="cp-feed-h">
+      <h2 id="cp-feed-h"><span class="cp-step">2</span> The live feed</h2>
+      <p class="cp-note" id="cp-feed-note"></p>
+      <div class="cp-multiples" id="cp-multiples"></div>
+      <details class="cp-table-toggle">
+        <summary>Table view of the published fixings</summary>
+        <div class="cp-scroll"><table class="cp-table" id="cp-fixings"></table></div>
+      </details>
+    </section>
+
+    <section class="cp-panel" aria-labelledby="cp-req-h">
+      <h2 id="cp-req-h"><span class="cp-step">3</span> What it is waiting for</h2>
+      <p class="cp-note">This campaign will be judged once, on these rules, when the data lands. Until every
+        row below is met it returns a typed refusal, not a number.</p>
+      <div class="cp-scroll"><table class="cp-table cp-req" id="cp-requirements"></table></div>
+      <h3>Campaign 2: do returns follow?</h3>
+      <div class="cp-scroll"><table class="cp-table cp-req" id="cp-requirements-2"></table></div>
+      <div class="cp-providers" id="cp-providers"></div>
+    </section>
+
+    <section class="cp-panel" aria-labelledby="cp-rules-h">
+      <h2 id="cp-rules-h"><span class="cp-step">4</span> The rules it will be judged on</h2>
+      <div class="cp-grid2">
+        <div>
+          <h3>Signal</h3>
+          <p id="cp-signal"></p>
+          <ul id="cp-signal-rules"></ul>
+          <h3>Basket</h3>
+          <ul id="cp-basket"></ul>
+          <h3>Outcome</h3>
+          <p id="cp-outcome"></p>
+          <p id="cp-capture" class="cp-mono"></p>
+        </div>
+        <div>
+          <h3>Stages</h3>
+          <div class="cp-scroll"><table class="cp-table" id="cp-stages"></table></div>
+          <h3>Gates, every stage</h3>
+          <ol id="cp-gates"></ol>
+          <p class="cp-fine" id="cp-floor"></p>
+        </div>
+      </div>
+      <h3>Decision rule</h3>
+      <ol id="cp-decision"></ol>
+    </section>
+
+    <section class="cp-panel" aria-labelledby="cp-future-h">
+      <h2 id="cp-future-h"><span class="cp-step">5</span> A future source, not part of this campaign</h2>
+      <div id="cp-future"></div>
+    </section>
+
+    <footer class="cp-foot">
+      <p id="cp-cannot"></p>
+      <p id="cp-generated"></p>
+      <p><a href="https://github.com/henryzhangpku/autonomous-quant-researcher/tree/main/research/missions/gpu-leads-revisions">pre-registration source</a> ·
+        <a href="https://github.com/henryzhangpku/gpu-price-index">the GPU rental price index</a> ·
+        <a href="https://github.com/henryzhangpku/autonomous-quant-researcher">the engine</a></p>
+    </footer>
+  </main>
+  <div class="cp-tip" id="cp-tip" role="tooltip" hidden></div>
+</body>
+</html>

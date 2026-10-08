@@ -148,7 +148,8 @@ def check_campaign_1(data: AvailableData, spec: Mapping[str, Any]) -> Requiremen
             data.estimates, grid, basket, outcome["measure"], outcome["horizon_weeks"],
             min_names=outcome["min_names"], min_contributors=outcome["min_contributors"])
         covered = sum(1 for i in closed if i in y)
-        note = "; ".join(data.provider_notes.get(p.name, "") for p in ESTIMATE_PROVIDERS).strip("; ")
+        note = "; ".join(f"{p.name}: {data.provider_notes[p.name]}" for p in ESTIMATE_PROVIDERS
+                         if p.name in data.provider_notes)
         items.append(status(
             Requirement(key,
                         f"Point-in-time consensus FY+1 {outcome['measure']} for "

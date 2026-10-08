@@ -129,7 +129,8 @@
       });
       document.body.appendChild(node);
     }
-    const link = '<a href="https://github.com/henryzhangpku/autonomous-quant-researcher" style="color:#8fd3ff">source</a>';
+    const link = '<a href="https://github.com/henryzhangpku/autonomous-quant-researcher" style="color:#8fd3ff">source</a>'
+      + ' · <a href="gpu-campaign.html" style="color:#8fd3ff">a pre-registered campaign</a>';
     if (failed) {
       node.innerHTML = `Demo failed to start: ${escapeHtml(bootText)} Â· ${link}`;
     } else if (!ready) {

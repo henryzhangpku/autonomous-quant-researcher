@@ -187,3 +187,14 @@ def test_after_a_campaign_1_pass_campaign_2_still_refuses_without_its_data(
     assert isinstance(judged.campaign_2, Refusal)
     assert judged.campaign_2.missing_keys == ("campaign_2_total_return_closes",)
     assert ledger.opened(mission_copy) == {"campaign_1"}
+
+
+def test_the_committed_demo_snapshot_carries_the_ledger_hash_and_no_result() -> None:
+    snapshot = json.loads((ledger.ROOT / "demo" / "data" / "gpu-leads-revisions.json")
+                          .read_text(encoding="utf-8"))
+    frozen = ledger.verify(MISSION_DIR)
+    assert snapshot["preregistration"]["ledger_event_hash"] == frozen.event_hash
+    assert snapshot["preregistration"]["spec_sha256"] == frozen.spec_sha256
+    assert snapshot["spec"] == load_spec()
+    assert snapshot["campaign_1"]["refused"] is True and snapshot["campaign_2"]["refused"] is True
+    assert "verdict" not in json.dumps(snapshot["campaign_1"])

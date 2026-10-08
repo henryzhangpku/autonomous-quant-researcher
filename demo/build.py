@@ -4,6 +4,9 @@ The demo ships the REAL engine: research/v3 (declarative contract, campaign
 coordinator, evaluator, ledger), research/backtest (options mechanics) and the
 lab's proposer boundary, zipped for Pyodide. Nothing from experiments,
 missions, validators or providers is needed to run one campaign in a browser.
+
+It also ships gpu-campaign.html, a static page for the pre-registered
+gpu-leads-revisions mission, with its committed data snapshot.
 """
 from __future__ import annotations
 
@@ -27,9 +30,13 @@ def main() -> None:
     if SITE.exists():
         shutil.rmtree(SITE)
     SITE.mkdir()
-    for name in ("index.html", "shim.js", "worker.js", "engine.py", "favicon.svg"):
+    for name in ("index.html", "gpu-campaign.html", "shim.js", "worker.js", "engine.py",
+                 "favicon.svg"):
         shutil.copy2(DEMO / name, SITE / name)
     shutil.copytree(DEMO / "static", SITE / "static")
+    # The pre-registered campaign page reads a committed snapshot written by
+    # demo/snapshot_gpu_campaign.py; the Pages build only copies it.
+    shutil.copytree(DEMO / "data", SITE / "data")
     with zipfile.ZipFile(SITE / "research.zip", "w", zipfile.ZIP_DEFLATED) as archive:
         for directory in PACKAGE_DIRS:
             for path in sorted((ROOT / directory).glob("*.py")):
