@@ -43,12 +43,19 @@ def test_signal_constants_are_the_ones_frozen_in_the_spec() -> None:
     assert signal["max_staleness_sessions"] == gpu_signal.MAX_STALENESS_SESSIONS
 
 
+def _as_frozen(target: Path) -> None:
+    """Keep only the two freeze events: the mission as it stood before any evaluation."""
+    path = target / ledger.LEDGER_NAME
+    path.write_bytes(b"\n".join(path.read_bytes().splitlines()[:2]) + b"\n")
+
+
 @pytest.fixture()
 def mission_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """A scratch copy of the mission and its bound code, so edits stay local."""
     root = tmp_path / "repo"
     target = root / "research" / "missions" / MISSION_DIR.name
     shutil.copytree(MISSION_DIR, target)
+    _as_frozen(target)
     for name in BOUND_CODE:
         (root / name).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ledger.ROOT / name, root / name)

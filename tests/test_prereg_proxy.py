@@ -185,9 +185,10 @@ def test_loaders_validate_schema_and_hash_the_bytes(tmp_path: Path) -> None:
 
 # ── refusal ────────────────────────────────────────────────────────────────
 
-def test_today_the_proxy_track_refuses_and_names_every_missing_input(tmp_path: Path) -> None:
+def test_today_the_proxy_track_refuses_and_names_every_missing_input(
+        tmp_path: Path, proxy_copy: Path) -> None:
     data = mission.gather_proxy(tape_source=str(tmp_path / "absent.csv"), today=date(2026, 10, 8))
-    outcome = mission.run_proxy(data)
+    outcome = mission.run_proxy(data, proxy_copy)
     assert isinstance(outcome, Refusal)
     assert set(outcome.missing_keys) == {
         "list_price_backfill", "xbrl_hyperscaler_capex", "xbrl_supplier_revenue",
@@ -203,7 +204,7 @@ def test_today_the_proxy_track_refuses_and_names_every_missing_input(tmp_path: P
 
 def test_the_proxy_track_is_chained_after_the_primary_freeze() -> None:
     events = ledger.read_events(mission.MISSION_DIR / ledger.LEDGER_NAME)
-    assert [e["type"] for e in events] == [ledger.FREEZE_EVENT, ledger.TRACK_EVENT]
+    assert [e["type"] for e in events[:2]] == [ledger.FREEZE_EVENT, ledger.TRACK_EVENT]
     assert events[1]["previous_event_hash"] == events[0]["event_hash"]
     track = ledger.verify_track(mission.MISSION_DIR, mission.PROXY_TRACK)
     assert sorted(track.code_sha256) == sorted(mission.PROXY_BOUND_CODE)
@@ -215,6 +216,8 @@ def proxy_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     root = tmp_path / "repo"
     target = root / "research" / "missions" / mission.MISSION_DIR.name
     shutil.copytree(mission.MISSION_DIR, target)
+    path = target / ledger.LEDGER_NAME          # the mission as frozen, before any evaluation
+    path.write_bytes(b"\n".join(path.read_bytes().splitlines()[:2]) + b"\n")
     for name in set(mission.BOUND_CODE) | set(mission.PROXY_BOUND_CODE):
         (root / name).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ledger.ROOT / name, root / name)
