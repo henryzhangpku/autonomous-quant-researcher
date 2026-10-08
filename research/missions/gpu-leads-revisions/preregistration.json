@@ -1,0 +1,113 @@
+{
+  "schema": "preregistration/1",
+  "mission": "gpu-leads-revisions",
+  "frozen_on": "2026-10-08",
+  "hypothesis": "GPU rental prices lead consensus estimate revisions for AI-infrastructure companies. When the 3-month change in the H100 rental price is positive, the basket's consensus FY+1 revenue estimates are revised up by more than their running average over the following 8 weeks, and by less when it is negative. Only if that holds is the second question asked: do the basket's returns follow?",
+  "signal": {
+    "primary": "H100",
+    "checks": ["H200", "B200"],
+    "definition": "log(V_t / V_anchor), V = published rental index value in USD per GPU-hour, anchor = the fixing 63 XNYS sessions before t",
+    "lookback_sessions": 63,
+    "anchor_tolerance_sessions": 3,
+    "min_window_coverage": 0.9,
+    "max_staleness_sessions": 3,
+    "calendar": "XNYS full-day sessions (research/prereg/xnys.py); weekend and holiday fixings ignored",
+    "observation_rules": [
+      "one value per index and date: the revision live at the as-of time (point-in-time, never a later correction)",
+      "only status=published rows count; withheld days are missing and are never filled",
+      "a window may not span a methodology version change"
+    ],
+    "position": "+1 if the signal is above zero, -1 if below; a week with no live signal, or a signal of exactly zero, is not evaluated",
+    "lag": "the signal used for a decision at the last session of ISO week t is the one computable at the previous session, read as of 14:30 UTC on the decision session",
+    "sources": {
+      "discovery_and_validation": "licensed multi-year daily H100 rental price history (not held)",
+      "holdout": "the public GPU rental price index tape, gpu-price-index series/index_values.csv, read point-in-time",
+      "checks": "H200 and B200 from the public index tape, holdout only"
+    }
+  },
+  "baskets": {
+    "suppliers_and_neoclouds": ["NVDA", "AMD", "AVGO", "CRWV", "NBIS"],
+    "hyperscalers": ["MSFT", "GOOGL", "AMZN", "META"],
+    "returns_benchmark": "SPY"
+  },
+  "weekly_grid": "the last XNYS session of each ISO week is the decision session",
+  "stages": {
+    "discovery": {"start": "2023-07-01", "end": "2024-12-31"},
+    "validation": {"start": "2025-01-01", "end": "2026-07-31"},
+    "embargo": {"start": "2026-08-01", "end": "2026-10-08", "note": "no stage reads these weeks"},
+    "holdout": {"start": "2026-10-09", "closes_after_evaluable_weeks": 52, "note": "every holdout week is after the freeze; it is opened once, when its requirements are met"}
+  },
+  "campaign_1": {
+    "question": "Do GPU rental prices lead consensus estimate revisions?",
+    "primary_outcome": {
+      "measure": "revenue",
+      "fiscal_period": "FY+1",
+      "basket": "suppliers_and_neoclouds",
+      "horizon_weeks": 8,
+      "per_name": "log(consensus mean at t+8w / consensus mean at t), the fiscal year pinned by its fiscal_year_end at t",
+      "basket_value": "equal-weight mean over names with at least 3 contributors at both ends",
+      "freshness": "a consensus observation counts on a date only if it is dated within the 7 days up to and including that date",
+      "min_names": 3,
+      "min_contributors": 3
+    },
+    "capture": "position_t * (Y_t - m_t); m_t = mean of every Y_s whose 8-week window had closed by t, from the discovery start; at least 13 such Y_s are required or the week is not evaluated",
+    "confirmation_outcome": {
+      "measure": "capex", "fiscal_period": "FY+1", "basket": "hyperscalers", "horizon_weeks": 8,
+      "min_names": 3, "min_contributors": 3,
+      "rule": "mean capture positive in validation and in holdout (sign only)"
+    },
+    "reported_only": ["FY+1 EPS revisions, suppliers_and_neoclouds", "primary outcome at 4 and 13 weeks"],
+    "traded": false,
+    "bootstrap_block_weeks": 8
+  },
+  "campaign_2": {
+    "question": "Do returns follow?",
+    "runs_only_if": "campaign 1 verdict is PASS; otherwise it stays sealed and is never evaluated",
+    "outcome": "Y_t = equal-weight mean log total return of suppliers_and_neoclouds over the next ISO week minus the SPY log total return over the same week",
+    "capture": "position_t * Y_t - cost_t; cost_t = cost_bps * |position_t - position_(t-1)| * 2 legs / 10000; the first week pays entry",
+    "base_cost_bps_per_side": 5,
+    "elevated_cost_bps_per_side": 10,
+    "extra_gate": "mean capture after base costs exceeds the mean of always holding the basket against SPY (the always-long baseline)",
+    "traded": true,
+    "bootstrap_block_weeks": 4
+  },
+  "gates": {
+    "every_stage": [
+      "mean weekly capture positive (after base costs where traded)",
+      "positive in the first half and in the second half of the stage's weeks",
+      "positive with the single best week removed",
+      "5% lower bound of a consecutive-block bootstrap of the mean positive (2000 resamples, seed from the pre-registration hash)",
+      "positive at twice the base trading cost (traded outcomes only; not applicable to estimate revisions)"
+    ],
+    "sample_floor": {"min_weeks": {"discovery": 52, "validation": 52, "holdout": 52}, "min_state_share": 0.2},
+    "below_floor": "UNTESTABLE, recorded as such and never as refuted",
+    "holdout_checks": "the same capture computed with the H200 signal and with the B200 signal must each have a positive mean"
+  },
+  "decision_rule": [
+    "Stages run in order: discovery, then validation, then holdout. A stage that fails ends the campaign with FAIL; a stage below its floor ends it with UNTESTABLE.",
+    "Campaign 1 is PASS only if discovery passes every gate, validation passes every gate and the capex confirmation, and the holdout passes every gate, the capex confirmation, and both the H200 and B200 checks.",
+    "Campaign 2 is evaluated only after a campaign 1 PASS, by the same stage sequence and gates plus the always-long baseline gate; its holdout also requires both checks.",
+    "The holdout is opened once. A refusal for missing data is not a verdict and does not open it.",
+    "No parameter, basket, date, horizon or gate changes after this freeze. A changed idea is a new mission with a new ledger entry; this campaign's verdict stands as recorded."
+  ],
+  "data_requirements": {
+    "gpu_rental_history_h100": {"source": "licensed", "from": "2023-03-01", "to": "2026-07-31", "min_session_coverage": 0.9},
+    "consensus_revenue_fy1": {"source": "licensed, point-in-time", "basket": "suppliers_and_neoclouds", "from": "2023-07-01", "through": "every decision week whose 8-week window has closed", "min_week_coverage": 0.9},
+    "consensus_capex_fy1": {"source": "licensed, point-in-time", "basket": "hyperscalers", "from": "2023-07-01", "through": "every decision week whose 8-week window has closed", "min_week_coverage": 0.9},
+    "index_h100_holdout": {"source": "public index tape", "holdout_weeks_with_live_signal_and_closed_window": 52},
+    "index_h200_and_b200_holdout": {"source": "public index tape", "min_share_of_holdout_weeks_live": 0.9},
+    "campaign_2_total_return_closes": {"symbols": ["NVDA", "AMD", "AVGO", "CRWV", "NBIS", "SPY"], "from": "2023-07-01", "week_counts_if": "SPY and at least 3 basket names have closes at both ends", "min_week_coverage": 0.9, "sealed_until": "campaign 1 PASS"}
+  },
+  "future_sources_not_in_this_campaign": [
+    {
+      "name": "CME Group (NYMEX) H100 and B200 rental index futures",
+      "status": "announced for trade date 5 October 2026, pending regulatory review; listing confirmed by exchange notice",
+      "sources": [
+        "https://www.cmegroup.com/content/dam/cmegroup/notices/ser/2026/08/ser-9785.pdf",
+        "https://investor.cmegroup.com/node/55686"
+      ],
+      "use": "a forward curve for rental prices. Using it would be a new pre-registration, not an amendment to this one."
+    }
+  ],
+  "what_this_cannot_say": "One signal, one basket, one horizon. A PASS says the 3-month H100 rental change carried information about the following 8 weeks of consensus revisions for these nine names over these dates; it is not a trading signal, and campaign 2 would still have to show the returns follow after costs. A FAIL says this version of the idea, stated this way, did not hold. Research only; not investment advice."
+}
