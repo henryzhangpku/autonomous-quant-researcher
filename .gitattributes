@@ -2,3 +2,5 @@ data/vendor_api_*.json merge=keepLocal
 data/vendor_api_*.json merge=ours
 *.sh text eol=lf
 research/missions/*/ledger.jsonl -text
+# Outcome tables are pinned by SHA-256 in their manifests; no newline conversion
+research/data/gpu_outcomes/*.csv -text

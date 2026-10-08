@@ -1,0 +1,444 @@
+{
+  "as_of_field": "filed",
+  "ciks": {
+    "AMD": 2488,
+    "AMZN": 1018724,
+    "AVGO": 1730168,
+    "CRWV": 1769628,
+    "GOOGL": 1652044,
+    "META": 1326801,
+    "MSFT": 789019,
+    "NBIS": 1513845,
+    "NVDA": 1045810,
+    "ORCL": 1341439
+  },
+  "coverage": [
+    {
+      "concept": "revenue",
+      "first_filed": "2021-01-29",
+      "first_period_end": "2020-12-26",
+      "last_filed": "2026-08-05",
+      "last_period_end": "2026-06-27",
+      "methods": [
+        "direct",
+        "fy_minus_9m"
+      ],
+      "period_type": "Q",
+      "periods": 23,
+      "qa_flagged": 0,
+      "ticker": "AMD",
+      "vintages": 23
+    },
+    {
+      "concept": "capex",
+      "first_filed": "2021-04-30",
+      "first_period_end": "2021-03-31",
+      "last_filed": "2026-07-31",
+      "last_period_end": "2026-06-30",
+      "methods": [
+        "direct",
+        "fy_minus_9m"
+      ],
+      "period_type": "Q",
+      "periods": 22,
+      "qa_flagged": 0,
+      "ticker": "AMZN",
+      "vintages": 22
+    },
+    {
+      "concept": "revenue",
+      "first_filed": "2020-12-18",
+      "first_period_end": "2020-11-01",
+      "last_filed": "2026-09-10",
+      "last_period_end": "2026-08-02",
+      "methods": [
+        "direct",
+        "fy_minus_9m"
+      ],
+      "period_type": "Q",
+      "periods": 24,
+      "qa_flagged": 0,
+      "ticker": "AVGO",
+      "vintages": 24
+    },
+    {
+      "concept": "revenue",
+      "first_filed": "2025-05-15",
+      "first_period_end": "2024-03-31",
+      "last_filed": "2026-08-12",
+      "last_period_end": "2026-06-30",
+      "methods": [
+        "direct",
+        "fy_minus_9m"
+      ],
+      "period_type": "Q",
+      "periods": 10,
+      "qa_flagged": 0,
+      "ticker": "CRWV",
+      "vintages": 12
+    },
+    {
+      "concept": "capex",
+      "first_filed": "2021-04-28",
+      "first_period_end": "2021-03-31",
+      "last_filed": "2026-07-23",
+      "last_period_end": "2026-06-30",
+      "methods": [
+        "direct",
+        "fy_minus_9m",
+        "ytd_diff"
+      ],
+      "period_type": "Q",
+      "periods": 22,
+      "qa_flagged": 0,
+      "ticker": "GOOGL",
+      "vintages": 22
+    },
+    {
+      "concept": "capex",
+      "first_filed": "2021-04-29",
+      "first_period_end": "2021-03-31",
+      "last_filed": "2026-07-30",
+      "last_period_end": "2026-06-30",
+      "methods": [
+        "direct",
+        "fy_minus_9m",
+        "ytd_diff"
+      ],
+      "period_type": "Q",
+      "periods": 22,
+      "qa_flagged": 0,
+      "ticker": "META",
+      "vintages": 31
+    },
+    {
+      "concept": "capex",
+      "first_filed": "2021-01-26",
+      "first_period_end": "2020-12-31",
+      "last_filed": "2026-07-29",
+      "last_period_end": "2026-06-30",
+      "methods": [
+        "direct",
+        "fy_minus_9m"
+      ],
+      "period_type": "Q",
+      "periods": 23,
+      "qa_flagged": 0,
+      "ticker": "MSFT",
+      "vintages": 23
+    },
+    {
+      "concept": "revenue",
+      "first_filed": "2021-04-01",
+      "first_period_end": "2020-12-31",
+      "last_filed": "2026-04-30",
+      "last_period_end": "2025-12-31",
+      "methods": [
+        "annual"
+      ],
+      "period_type": "FY",
+      "periods": 6,
+      "qa_flagged": 0,
+      "ticker": "NBIS",
+      "vintages": 10
+    },
+    {
+      "concept": "datacenter_revenue",
+      "first_filed": "2021-05-26",
+      "first_period_end": "2020-10-25",
+      "last_filed": "2026-08-26",
+      "last_period_end": "2026-07-26",
+      "methods": [
+        "direct",
+        "fy_minus_9m"
+      ],
+      "period_type": "Q",
+      "periods": 24,
+      "qa_flagged": 0,
+      "ticker": "NVDA",
+      "vintages": 24
+    },
+    {
+      "concept": "revenue",
+      "first_filed": "2020-11-18",
+      "first_period_end": "2020-10-25",
+      "last_filed": "2026-08-26",
+      "last_period_end": "2026-07-26",
+      "methods": [
+        "direct",
+        "fy_minus_9m"
+      ],
+      "period_type": "Q",
+      "periods": 24,
+      "qa_flagged": 0,
+      "ticker": "NVDA",
+      "vintages": 24
+    },
+    {
+      "concept": "capex",
+      "first_filed": "2021-03-11",
+      "first_period_end": "2021-02-28",
+      "last_filed": "2026-09-11",
+      "last_period_end": "2026-08-31",
+      "methods": [
+        "direct",
+        "fy_minus_9m",
+        "ytd_diff"
+      ],
+      "period_type": "Q",
+      "periods": 23,
+      "qa_flagged": 0,
+      "ticker": "ORCL",
+      "vintages": 23
+    }
+  ],
+  "data_sha256": {
+    "fundamentals_growth.csv": "1bde37927c9f21e40764482681b56c34d85c6bda209dfb425366b54166f49522",
+    "fundamentals_pit.csv": "3beb13742ca97c8a35667ad4a9d3b635cc5c7b88e4a65d4a25411c98fb9c077d",
+    "sec_facts.csv": "899578d6ff108053222c4c3afbc1f0fe240c125206f64b3bbba10aa713a39926"
+  },
+  "earliest_period_end": "2020-10-01",
+  "endpoints": [
+    "data.sec.gov/api/xbrl/companyfacts",
+    "data.sec.gov/submissions",
+    "www.sec.gov/Archives/edgar/data (NVDA 10-Q/10-K XBRL instances)"
+  ],
+  "limitations": [
+    "as-of date is the 10-Q/10-K filing date; earnings press releases (8-K exhibit 99, not XBRL-tagged for these figures) usually reach the market minutes to days earlier, so the series lag the information they carry; this is conservative, never look-ahead",
+    "capex is cash paid for property and equipment from the cash-flow statement; it excludes assets acquired under finance leases, which are material for MSFT, AMZN and META",
+    "fiscal calendars differ: MSFT FY ends June, ORCL May, NVDA late January, AVGO around 1 November, AMD late December (52/53-week); compare by period dates or calendar_quarter (the calendar quarter containing the period midpoint), not by fiscal labels",
+    "fourth quarters are FY total minus nine-month YTD (method fy_minus_9m); Q2/Q3 cash-flow quarters are YTD differences (ytd_diff); a derived quarter is re-read only when its longer leg is re-reported",
+    "comparatives restated in later filings create new vintages (META capex, CRWV rounding to millions in 2026 filings); vintage 0 is the first report",
+    "NBIS: annual 20-F only; the FY2025 20-F restates prior years to continuing operations after the Yandex divestiture, so FY2023/FY2024 values change by an order of magnitude between vintages",
+    "CRWV: XBRL begins with its first 10-Q (filed 2025-05-15); 2024 quarters exist only as comparatives filed in 2025-2026",
+    "NVDA Data Center revenue is the market-platform disclosure on srt:ProductOrServiceAxis, not an operating segment (NVDA's segments are Compute & Networking and Graphics)"
+  ],
+  "network_requests_this_build": 0,
+  "nvda_instance_parse_failures": [],
+  "prepared_at_utc": "2026-10-08T21:36:15.065331+00:00",
+  "provider": "sec-edgar-xbrl",
+  "raw_sources_sha256": {
+    "https://data.sec.gov/api/xbrl/companyfacts/CIK0000002488.json": "21a29c75076d90fced568785d855fc427a15c7458bc0bb153a9dedd88ad3349e",
+    "https://data.sec.gov/api/xbrl/companyfacts/CIK0000789019.json": "f8aae2965b20ad0df44bdf7ccbedf797d275b6b8dc030154a7a311361bb7246f",
+    "https://data.sec.gov/api/xbrl/companyfacts/CIK0001018724.json": "7549fb68446eee40e1f50a166fa06b2d2ee6349e07c8553a4828757e032d3cd4",
+    "https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json": "19ef503a5770f5660964b3c3aea6937579d9b359da344afe6a9adf59c63d26ff",
+    "https://data.sec.gov/api/xbrl/companyfacts/CIK0001326801.json": "7518e76d6dac2d016e1a3d1dec1cc55ff9ea3bdd58a151b16fcaa067a6c9d94e",
+    "https://data.sec.gov/api/xbrl/companyfacts/CIK0001341439.json": "65523545f040abaea1dfcf321da2a5aec85e7f34387244b0ffcb26e4c8707f7d",
+    "https://data.sec.gov/api/xbrl/companyfacts/CIK0001513845.json": "7e21951ecf0fed0fb2a26b5e2464c7b15d69bcdd1928d8cda52a875a29ca04f7",
+    "https://data.sec.gov/api/xbrl/companyfacts/CIK0001652044.json": "a017f26ee88cb4a639d1c1ddb06d53b4afe22f0ac89cabec7cd67c88919fe1c5",
+    "https://data.sec.gov/api/xbrl/companyfacts/CIK0001730168.json": "3bdb6644c12addf1e63c4dc861008d7804fbf3d3f5aa6eb9b97f72c0e89a7adf",
+    "https://data.sec.gov/api/xbrl/companyfacts/CIK0001769628.json": "c0af16143fd615e9d4d3066226d81722fcbb49de9ee4125f038b1f47e285026f",
+    "https://data.sec.gov/submissions/CIK0000002488-submissions-001.json": "932d4367728ed290688674ab3631758eaac5b4351da36d56aefcf7df73389147",
+    "https://data.sec.gov/submissions/CIK0000002488-submissions-002.json": "c0387910f8a6f4af6af5ce95a49df80c1b624e8963d1080d894c1b109469d4e0",
+    "https://data.sec.gov/submissions/CIK0000002488.json": "9789d97cfb1b41fb58cc5fcebd13cfced084409dc3bbcfb6ca1382304f092493",
+    "https://data.sec.gov/submissions/CIK0000789019-submissions-001.json": "de768837e66425317895fba9214f56fd17b72b676804d1d5ea48827c5e24afba",
+    "https://data.sec.gov/submissions/CIK0000789019-submissions-002.json": "80701da48a681872db8f52f243fee7c984b32c990fce78d499bb3f4cde0813cb",
+    "https://data.sec.gov/submissions/CIK0000789019.json": "2484a2a3b5677d892a1b25af573ce4eda7b6f449f5eda41bac6b3f106dc3139c",
+    "https://data.sec.gov/submissions/CIK0001018724-submissions-001.json": "4d75fbd7d19d9955dcb0b19ebbd0cf1de8a1aff0cc0436a2cc1d0c5333c3a12a",
+    "https://data.sec.gov/submissions/CIK0001018724-submissions-002.json": "2826573f41f877bbea71600dcf5c357f9e3b0114651dd949a200842f75b626c1",
+    "https://data.sec.gov/submissions/CIK0001018724.json": "1f5bb6be4033e2378bfa0d14e0d9276a08d8dfb070b263f59ca0e77d68ced058",
+    "https://data.sec.gov/submissions/CIK0001045810-submissions-001.json": "cba408e22be614c3ca4911fb3ff88e08d669dfc5381579f458283035d584051f",
+    "https://data.sec.gov/submissions/CIK0001045810.json": "0b3ce6a0cd78c43d69b19b7efb9effcd79d0c6bd4c43606aac84d0f872cc9c73",
+    "https://data.sec.gov/submissions/CIK0001326801-submissions-001.json": "dd36bbcd2c768b8888bcda970f2791b03b09811250ff26984a4c37532e1b9ca3",
+    "https://data.sec.gov/submissions/CIK0001326801-submissions-002.json": "159ce1808e1f504d67e080411afa744f4c7a7491d75588df7356effda5e1951e",
+    "https://data.sec.gov/submissions/CIK0001326801.json": "ffa346d3218c358a538c06c856bc758642c4065e8a0fd0d4477aee6a71d905a9",
+    "https://data.sec.gov/submissions/CIK0001341439-submissions-001.json": "73288c48255e5545311b61be33707a19125db3ed2ca89a0e0d7a733eea0c6ea8",
+    "https://data.sec.gov/submissions/CIK0001341439.json": "bed0ec89b0d273799517d3e332b3a4ba3612168f0e4e9b963759b507f857adec",
+    "https://data.sec.gov/submissions/CIK0001513845.json": "882e3d16637df013b43f7c59fd0ae643b7d2e517b45f209d7c80af90922198e5",
+    "https://data.sec.gov/submissions/CIK0001652044-submissions-001.json": "53c87eb0bbd80844df1f194a457e23cf560822d18de24da12cf3de0563165709",
+    "https://data.sec.gov/submissions/CIK0001652044.json": "9434407b197d6322de4bece8ad3b69459c8d6ddf3a68526b4b22b02e8175d33c",
+    "https://data.sec.gov/submissions/CIK0001730168.json": "b3bb8094e6809c7b3c7d2d7f419363b213bfa5071b40adb2bc2534317637f061",
+    "https://data.sec.gov/submissions/CIK0001769628-submissions-001.json": "80fe7f7a4132e87369a6ad1551f9e5f74a629ab4cfaf7cfc0745e5034eb14767",
+    "https://data.sec.gov/submissions/CIK0001769628.json": "e919b13ec8d5edccffa2fd0c09806d72ce2d0d3079ba5c46256081ba1f985df8",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581021000010/index.json": "3c8e8f5d022f703e6550527defa299722ec75498e29e4d6397fbe2b69d204151",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581021000010/nvda-20210131_htm.xml": "88bacaea0201e14ee7d85e1a534e60fbc0f73fae8670310c197bd7b812d13f9e",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581021000064/index.json": "d9a2ab316958cc9d6cdc0162fbe4c79b24f3844087468db4742b6f8ee1fa82d1",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581021000064/nvda-20210502_htm.xml": "66bd1ded57a330083a069a8a9f4d5d276d32709a4831416cd8bac2c50389ef81",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581021000131/index.json": "67579fa6bb2207e9ce8c1f5b7156374237e1661c4bf600de74969f40747507b8",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581021000131/nvda-20210801_htm.xml": "71e8931634fb1b16b4b6223a7c4ae17af89e1a00fc2c06628994d69e455a2e78",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581021000163/index.json": "6cdfc3f1fb7f8c0b8169631ecd3c31738f142feb2d0fd32ab4d22bd9fd6a8a2c",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581021000163/nvda-20211031_htm.xml": "0b69021c5701e1869a04e082984446f7f608f2e4b57bd1f4714d934ba187b410",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000036/index.json": "d1527e55f4e54ee65ff2b20f3ef18e1701bb401e6391201ab3217641a38c5b8b",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000036/nvda-20220130_htm.xml": "230732b2e913338efa18b1975869cb8899a688bbb3c08e3a0b38946c9108fad3",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000079/index.json": "55b9cda012ea3c856a4e76ca66d35131777b36da6c45ea28bc59cdcbe58b5f68",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000079/nvda-20220501_htm.xml": "da5ebc57ab88cf96bbeb80ea6f8f898f830f439d6ee7048656b187041c0d8855",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000147/index.json": "de032b77799bf4e0dd1084f31a6b66301b9f440116fd0f7a5fbf2a5b5b99a732",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000147/nvda-20220731_htm.xml": "a2a7ded25ed8b3554f71474f15bba849ab0228c1c25b8b5697b1ef72d5d836c5",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000166/index.json": "b773abee03d82469ef7b54f1be586e9e51cb91387e8907aef58da9d24421c529",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000166/nvda-20221030_htm.xml": "fd5cbff9032f0063e3c9099037125c22a949e81f5b13db72f2079a9a9a87a5f5",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000017/index.json": "5c1f50478b2bad2732de992b7142eea8dca1fa47e190d55a3ef76ea47b65c1df",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000017/nvda-20230129_htm.xml": "6951254b74c59d8b0263604c83b0b494bc43a2565acffcc3645eede1df776644",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000093/index.json": "84ac6605422a5e4e2e4b2a77ea89cc527351049dc6eff87ac3ebb55792bb355f",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000093/nvda-20230430_htm.xml": "cff02c71daf56034288eeac7ea5987a1a45f250998fff3a5ffd988ffb8a1ad52",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000175/index.json": "e08c81a2cf702d2144f1c839f2633900c2e8cac9f45cd6fb9853abe5d82d3cbe",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000175/nvda-20230730_htm.xml": "8101cbf4cbfbbb2e5f969c0d2dc99b799d00bf1924633326bf3b78e3cd579b35",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000227/index.json": "e7011b22cc60e7a23b1a512788de2440cbaee7d63427c17741057066b6a57837",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000227/nvda-20231029_htm.xml": "68e658c31e37a6af1872d769ad88e9b83ba818fb812d62032a944eb5865e5de8",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/index.json": "04768bc023540a862715108a52fd3551a4372f24f44c035fd5fbe4709b106f36",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/nvda-20240128_htm.xml": "b9e74251f28f0537967d98ff71b835f0893ee08337ef9481ba6fe9cde2a5bb9d",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000124/index.json": "339ac5f4069f5467c8b0a1a3e1924dcef184751bb8906584fc672ae9c1bf394c",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000124/nvda-20240428_htm.xml": "c7d6a3523c16d4367be53cb634531c8e182502ddf1a35d264eac9a9581512884",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000264/index.json": "47be4b5b9eb835d5cf1a022d63c245d0d3b161b4fc71fd0e79df40d5552c66c7",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000264/nvda-20240728_htm.xml": "86dcf5b9c831afb58bd4635c5f38531a5a587086048ae1703bb95a1893baa564",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000316/index.json": "9a1e40e58b38c9e14fde9d22cec72a9a899597253a29cef5bd28c0d356c4d026",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000316/nvda-20241027_htm.xml": "87ae0299a8ece246cf22d4df1ca0381e79d4880400ea2394de032de874c610cc",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/index.json": "3cca3ac197e4a5527cb029c034d7b14853c59b4fe640ca35e2a931708482813b",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126_htm.xml": "c85f41184ee3b0a78c56564bf77804988757d6e002c16be558d01b53a0ad2845",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000116/index.json": "a2f2b1060893709fbc00f092b835499b0324e876ddae78cb89ebbd5d87dc30cd",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000116/nvda-20250427_htm.xml": "2645acfc06b6623a4c619ae5523d37fa899283df7cb49ed33081808ce1385159",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000209/index.json": "0eff66e4eb5902dda2080570486994c36cdbeb9da5450bffd230fd613878a518",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000209/nvda-20250727_htm.xml": "49c990420f1eae3bc04d75ffce91ca05dd8195ea492cf9114ec5fe67c0d0effd",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000230/index.json": "85b2e4a637182bcc57db43df39f27fcd6b01333437e6e7865b1801c971c5fb00",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000230/nvda-20251026_htm.xml": "ce89af0e0a0fd133b93ac0127d054c821b78aa9055e64b8d41aad737f303107c",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/index.json": "16c7e57654878aab71bde84657de508eb47f06b3816a81e71d082375075b157f",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125_htm.xml": "af8398105d629d98defacca572c8e85fe0d8a5f551266b01df2d8be4fa03558f",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/index.json": "922231491d390f18c06b3a184efd0c762eebfcf6de230034b1a30ab5e0746290",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426_htm.xml": "34b9c489ac8d4fad7f7896332a5e47af98586b834042470d70f265d37e911925",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/index.json": "a2b910dc00fd9b5a624085e13d68569ecf094b4b7a0cf30716fd4926c2d7dd2b",
+    "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726_htm.xml": "fd37c5c3b08be610fa48f8e3e394ab8d2108a23bbc2dfa26ee0bf0d91493bdfd"
+  },
+  "row_counts": {
+    "fundamentals_growth.csv": 252,
+    "fundamentals_pit.csv": 238,
+    "sec_facts.csv": 612
+  },
+  "series": [
+    {
+      "concept": "capex",
+      "note": "Additions to property and equipment (cash); fiscal year ends June; excludes finance leases",
+      "period_types": [
+        "Q"
+      ],
+      "tags": [
+        "PaymentsToAcquirePropertyPlantAndEquipment"
+      ],
+      "ticker": "MSFT"
+    },
+    {
+      "concept": "capex",
+      "note": "Purchases of property and equipment (cash, gross of proceeds/incentives); excludes finance leases",
+      "period_types": [
+        "Q"
+      ],
+      "tags": [
+        "PaymentsToAcquireProductiveAssets"
+      ],
+      "ticker": "AMZN"
+    },
+    {
+      "concept": "capex",
+      "note": "Purchases of property and equipment (cash)",
+      "period_types": [
+        "Q"
+      ],
+      "tags": [
+        "PaymentsToAcquirePropertyPlantAndEquipment"
+      ],
+      "ticker": "GOOGL"
+    },
+    {
+      "concept": "capex",
+      "note": "Purchases of property and equipment (cash); excludes finance lease principal",
+      "period_types": [
+        "Q"
+      ],
+      "tags": [
+        "PaymentsToAcquirePropertyPlantAndEquipment"
+      ],
+      "ticker": "META"
+    },
+    {
+      "concept": "capex",
+      "note": "Capital expenditures (cash); fiscal year ends May",
+      "period_types": [
+        "Q"
+      ],
+      "tags": [
+        "PaymentsToAcquirePropertyPlantAndEquipment"
+      ],
+      "ticker": "ORCL"
+    },
+    {
+      "concept": "revenue",
+      "note": "Total revenue; 52/53-week fiscal year ending late January",
+      "period_types": [
+        "Q"
+      ],
+      "tags": [
+        "Revenues"
+      ],
+      "ticker": "NVDA"
+    },
+    {
+      "concept": "revenue",
+      "note": "Net revenue; 52/53-week fiscal year ending late December",
+      "period_types": [
+        "Q"
+      ],
+      "tags": [
+        "RevenueFromContractWithCustomerExcludingAssessedTax"
+      ],
+      "ticker": "AMD"
+    },
+    {
+      "concept": "revenue",
+      "note": "Net revenue; 52/53-week fiscal year ending around 1 November",
+      "period_types": [
+        "Q"
+      ],
+      "tags": [
+        "RevenueFromContractWithCustomerExcludingAssessedTax"
+      ],
+      "ticker": "AVGO"
+    },
+    {
+      "concept": "revenue",
+      "note": "Revenue; public since March 2025, so XBRL starts with the first 10-Q (May 2025)",
+      "period_types": [
+        "Q"
+      ],
+      "tags": [
+        "RevenueFromContractWithCustomerExcludingAssessedTax"
+      ],
+      "ticker": "CRWV"
+    },
+    {
+      "concept": "revenue",
+      "note": "Annual 20-F only; quarterly results are furnished on 6-K without XBRL. The FY2025 20-F restates prior years to continuing operations after the Yandex divestiture",
+      "period_types": [
+        "FY"
+      ],
+      "tags": [
+        "Revenues"
+      ],
+      "ticker": "NBIS"
+    },
+    {
+      "concept": "datacenter_revenue",
+      "note": "Revenue on srt:ProductOrServiceAxis = nvda:DataCenterMember (market-platform disclosure), read from each 10-Q/10-K XBRL instance; single-dimension contexts only",
+      "period_types": [
+        "Q"
+      ],
+      "tags": [
+        "Revenues",
+        "RevenueFromContractWithCustomerExcludingAssessedTax"
+      ],
+      "ticker": "NVDA"
+    }
+  ],
+  "unavailable": [
+    {
+      "reason": "Nebius furnishes quarterly results on 6-K without XBRL; only the annual 20-F is XBRL-tagged. Not scraped from press releases.",
+      "series": "NBIS quarterly revenue"
+    },
+    {
+      "reason": "no XBRL before the first 10-Q; 2024 quarters appear only as comparatives filed from 2025-05-15",
+      "series": "CRWV pre-IPO quarters"
+    },
+    {
+      "reason": "no free, licensed historical point-in-time source; see docs/AS_OF_DISCIPLINE.md",
+      "series": "point-in-time consensus estimate revisions"
+    }
+  ],
+  "user_agent": "autonomous-quant-researcher research heng.henry.zhang@gmail.com"
+}

@@ -36,3 +36,6 @@ research/missions/*/fits/*/filtered.csv.gz
 
 # Pre-registration ledgers are committed evidence; their lock file is not
 research/missions/*/.ledger.lock
+
+# Daily price table is ~1 MB; rebuilt by research/experiments/prepare_gpu_outcomes.py, pinned by hash in prices_manifest.json
+research/data/gpu_outcomes/prices_daily.csv
