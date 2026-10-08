@@ -279,3 +279,31 @@ def verify_track(mission_dir: Path, track: str) -> FrozenTrack:
         if current["code_sha256"][name] != digest:
             raise PreregistrationError(f"{name} differs from the frozen {track} track")
     return entry
+
+
+STAGE_READ_EVENT = "stage_read"
+
+
+def record_stage_read(mission_dir: Path, campaign: str, stages: Mapping[str, Any], *,
+                      inputs: Mapping[str, str], sealed: Sequence[str],
+                      created_at: datetime | None = None) -> None:
+    """Record, once, a read of the stages whose data predates the freeze.
+
+    For a campaign whose holdout has not happened yet: discovery and validation
+    are evaluated by the frozen code and written here with the hashes of their
+    inputs, while the holdout stays sealed. The one-time verdict (receipt, then
+    record_verdict) is untouched and still runs once the holdout completes;
+    because the frozen code is deterministic, it must reproduce these stages.
+    """
+    verify(mission_dir)
+    ledger_path = mission_dir / LEDGER_NAME
+    with _interprocess_lock(mission_dir / ".ledger.lock"):
+        events = read_events(ledger_path)
+        if any(e["type"] == STAGE_READ_EVENT and e["payload"]["campaign"] == campaign for e in events):
+            raise PreregistrationError(f"{campaign} already has a stage read")
+        if any(e["type"] in {OPENED_EVENT, VERDICT_EVENT} and e["payload"]["campaign"] == campaign
+               for e in events):
+            raise PreregistrationError(f"{campaign} was already opened for its verdict")
+        _append(ledger_path, events, STAGE_READ_EVENT, f"{campaign}:{STAGE_READ_EVENT}",
+                {"campaign": campaign, "stages": dict(stages), "sealed": list(sealed),
+                 "inputs": dict(sorted(inputs.items()))}, created_at)
