@@ -413,7 +413,10 @@ def gather_proxy(*, tape_source: str | None = None, backfill: str | None = None,
 
 
 def _proxy_grid(spec: Mapping[str, Any], as_of: date) -> list[date]:
-    return proxy_campaign.monthly_decisions(date.fromisoformat(spec["stages"]["discovery"]["start"]), as_of)
+    # A spec may start the decision grid before discovery so the outcome warm-up
+    # (matured outcomes before the first scored month) uses earlier filings.
+    start = spec.get("decision_grid_start") or spec["stages"]["discovery"]["start"]
+    return proxy_campaign.monthly_decisions(date.fromisoformat(start), as_of)
 
 
 def _proxy_inputs(data: ProxyData, spec: Mapping[str, Any], spec_hash: str) -> proxy_campaign.ProxyInputs:
