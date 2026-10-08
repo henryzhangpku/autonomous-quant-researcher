@@ -110,6 +110,7 @@ flowchart LR
 | [`research/providers/`](research/providers/) | Read-only historical adapters (Alpaca primary; Polygon/Massive secondary) and a deterministic snapshot writer. Provider substitution is recorded in the manifest, never hidden. |
 | [`research/experiments/`](research/experiments/) | ~50 preregistered sweeps, replications, attributions, and verifications. Each is a script that runs *through* a fixed validator. |
 | [`research/missions/`](research/missions/) | Mission statements, frozen policies, preregistrations, and findings — the human-readable ledger. |
+| [`research/prereg/`](research/prereg/) | Pre-registered campaigns: a hash-chained ledger that binds a specification and its evaluation code before the data exists, typed data requirements that refuse until met, and pure weekly gates. |
 | [`docs/AUTONOMOUS_QUANT_RESEARCH.md`](docs/AUTONOMOUS_QUANT_RESEARCH.md) | The full design contract. |
 | [`demo/`](demo/) | The browser demo: the research board UI, a Web Worker running the engine under Pyodide, a synthetic tape, a scripted proposer, and the build that GitHub Pages deploys. |
 
@@ -133,6 +134,57 @@ campaigns shipped with the repo, with links to the evidence.
 
 Two things these have in common: the acceptance bar was written down before
 the data was staged, and it was not lowered when nothing cleared it.
+
+---
+
+## Pre-registered before the data exists: gpu-leads-revisions
+
+[`research/missions/gpu-leads-revisions`](research/missions/gpu-leads-revisions/PREREGISTRATION.md)
+turns an investment idea into a locked, auditable test, fed live by a public
+[GPU rental price index](https://github.com/henryzhangpku/gpu-price-index).
+**[Its page](https://henryzhangpku.github.io/autonomous-quant-researcher/gpu-campaign.html)**
+shows the frozen rules, the ledger hash, the live feed and what the campaign
+is still waiting for.
+
+**The idea.** Rental prices for H100, H200 and B200 GPUs move daily. Consensus
+estimates for the companies that sell, host and buy that compute move
+quarterly. If rising rental rates mean demand is outrunning supply, the
+revisions should follow weeks later. Campaign 1 asks whether the 3-month change
+in the H100 rental price leads 8-week revisions to consensus FY+1 revenue for
+NVDA, AMD, AVGO, CRWV and NBIS, with hyperscaler capex as a confirmation and
+H200 and B200 as an independent check. Only if that passes, campaign 2 asks
+whether returns follow, after costs.
+
+**What is locked.** The signal, basket, outcomes, horizons, stage dates,
+gates (positive in both halves, positive with the best week removed, positive
+at double costs, a block-bootstrap lower bound) and the decision rule are in
+[`preregistration.json`](research/missions/gpu-leads-revisions/preregistration.json).
+That file, the document and the code that will compute the verdict
+([`research/prereg/`](research/prereg/)) are bound by SHA-256 into a
+hash-chained [ledger](research/missions/gpu-leads-revisions/ledger.jsonl)
+with the campaign coordinator's event format. Each campaign is judged once:
+a receipt is written to the ledger before evaluation reads any data.
+
+**What it is waiting for.** There are no results, by design. The test needs:
+
+- multi-year daily H100 rental price history (licensed; not held);
+- point-in-time consensus estimate history from S&P Capital IQ or LSEG
+  I/B/E/S (licensed; not held); and
+- 52 holdout weeks from the public index after the 8 October 2026 freeze. The
+  3-month signal needs 64 sessions under one methodology version, so it can go
+  live in mid-December 2026 at the earliest.
+
+Until every requirement is met the campaign returns a typed refusal that names
+what is missing and how much exists against how much is needed:
+
+```bash
+uv run python -m research.prereg.gpu_leads_revisions verify   # recompute the ledger hashes
+uv run python -m research.prereg.gpu_leads_revisions status   # requirements, signal status, refusal
+uv run python demo/snapshot_gpu_campaign.py                    # refresh the page's data snapshot
+```
+
+The index tape is read from a sibling `../gpu-index` checkout, `$GPU_INDEX_TAPE`,
+or `--tape <path or https URL>`.
 
 ---
 
@@ -162,7 +214,7 @@ Requires Python ≥ 3.12 and [`uv`](https://github.com/astral-sh/uv).
 
 ```bash
 uv sync
-uv run pytest            # 329 tests, ~1 minute, no network, no keys
+uv run pytest            # 374 tests, ~1 minute, no network, no keys
 ```
 
 **Choose a proposer.** The evaluator is deterministic CPU code; only the
