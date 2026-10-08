@@ -16,7 +16,7 @@ from research.v3.campaign import _sha256
 
 def committed_event() -> dict:
     lines = (MISSION_DIR / ledger.LEDGER_NAME).read_bytes().splitlines()
-    assert len(lines) == 1, "the mission ledger holds exactly the freeze event"
+    assert lines, "the mission ledger opens with the primary freeze event"
     return json.loads(lines[0])
 
 
@@ -90,9 +90,11 @@ def test_editing_bound_code_breaks_the_check(mission_copy: Path) -> None:
 
 def test_editing_the_ledger_breaks_the_chain(mission_copy: Path) -> None:
     path = mission_copy / ledger.LEDGER_NAME
-    event = json.loads(path.read_bytes())
+    lines = path.read_bytes().splitlines()
+    event = json.loads(lines[0])
     event["created_at"] = "2026-01-01T00:00:00+00:00"
-    path.write_bytes(json.dumps(event, sort_keys=True, separators=(",", ":")).encode() + b"\n")
+    lines[0] = json.dumps(event, sort_keys=True, separators=(",", ":")).encode()
+    path.write_bytes(b"\n".join(lines) + b"\n")
     with pytest.raises(ledger.PreregistrationError, match="integrity hash"):
         ledger.verify(mission_copy)
 
@@ -145,7 +147,7 @@ def test_a_campaign_is_judged_once_and_the_verdict_is_returned_as_recorded(
     assert isinstance(first, mission.Judgement)
     assert first.campaign_1["verdict"] == "FAIL" and first.campaign_2 is None
     types = [event["type"] for event in ledger.read_events(mission_copy / ledger.LEDGER_NAME)]
-    assert types == [ledger.FREEZE_EVENT, ledger.OPENED_EVENT, ledger.VERDICT_EVENT]
+    assert types == [ledger.FREEZE_EVENT, ledger.TRACK_EVENT, ledger.OPENED_EVENT, ledger.VERDICT_EVENT]
 
     def must_not_run(inputs):
         raise AssertionError("a recorded campaign must not be evaluated again")

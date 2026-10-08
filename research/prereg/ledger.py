@@ -38,6 +38,7 @@ DOCUMENT_NAME = "PREREGISTRATION.md"
 FREEZE_EVENT = "preregistration_frozen"
 OPENED_EVENT = "evaluation_opened"
 VERDICT_EVENT = "verdict_recorded"
+TRACK_EVENT = "track_frozen"
 
 
 class PreregistrationError(RuntimeError):
@@ -71,12 +72,13 @@ def spec_sha256(path: Path) -> str:
     return _sha256(json.loads(path.read_text(encoding="utf-8")))
 
 
-def freeze_payload(mission_dir: Path, code_paths: Sequence[str]) -> dict[str, Any]:
-    spec = json.loads((mission_dir / SPEC_NAME).read_text(encoding="utf-8"))
+def freeze_payload(mission_dir: Path, code_paths: Sequence[str], *, spec_name: str = SPEC_NAME,
+                   document_name: str = DOCUMENT_NAME) -> dict[str, Any]:
+    spec = json.loads((mission_dir / spec_name).read_text(encoding="utf-8"))
     return {
         "mission": spec["mission"],
-        "spec_sha256": spec_sha256(mission_dir / SPEC_NAME),
-        "document_sha256": text_sha256(mission_dir / DOCUMENT_NAME),
+        "spec_sha256": spec_sha256(mission_dir / spec_name),
+        "document_sha256": text_sha256(mission_dir / document_name),
         "code_sha256": {name: text_sha256(ROOT / name) for name in sorted(code_paths)},
     }
 
@@ -153,12 +155,16 @@ def opened(mission_dir: Path) -> set[str]:
 
 
 def open_evaluation(mission_dir: Path, campaign: str, *, requires_pass: str | None = None,
+                    track: str | None = None, inputs: Mapping[str, str] | None = None,
                     created_at: datetime | None = None) -> None:
     """Durably write the one-use receipt BEFORE any evaluation reads data.
 
-    A crash after this point still consumes the evaluation: there is no retry.
+    The receipt records the content hash of every input the evaluation will
+    read. A crash after this point still consumes the evaluation: no retry.
     """
     verify(mission_dir)
+    if track is not None:
+        verify_track(mission_dir, track)
     ledger_path = mission_dir / LEDGER_NAME
     with _interprocess_lock(mission_dir / ".ledger.lock"):
         events = read_events(ledger_path)
@@ -170,7 +176,7 @@ def open_evaluation(mission_dir: Path, campaign: str, *, requires_pass: str | No
             if not prior or prior[0]["payload"]["verdict"] != "PASS":
                 raise PreregistrationError(f"{campaign} is sealed until {requires_pass} passes")
         _append(ledger_path, events, OPENED_EVENT, f"{campaign}:{OPENED_EVENT}",
-                {"campaign": campaign}, created_at)
+                {"campaign": campaign, "inputs": dict(sorted((inputs or {}).items()))}, created_at)
 
 
 def record_verdict(mission_dir: Path, campaign: str, result: Mapping[str, Any], *,
@@ -214,4 +220,62 @@ def verify(mission_dir: Path) -> FrozenPreregistration:
     for name, digest in entry.code_sha256.items():
         if current["code_sha256"][name] != digest:
             raise PreregistrationError(f"{name} differs from the frozen pre-registration")
+    return entry
+
+
+@dataclass(frozen=True)
+class FrozenTrack:
+    mission: str
+    track: str
+    event_hash: str
+    created_at: str
+    spec_name: str
+    document_name: str
+    spec_sha256: str
+    document_sha256: str
+    code_sha256: Mapping[str, str]
+
+
+def _track(event: Mapping[str, Any]) -> FrozenTrack:
+    p = event["payload"]
+    return FrozenTrack(p["mission"], p["track"], event["event_hash"], event["created_at"],
+                       p["spec_name"], p["document_name"], p["spec_sha256"], p["document_sha256"],
+                       dict(p["code_sha256"]))
+
+
+def freeze_track(mission_dir: Path, track: str, *, spec_name: str, document_name: str,
+                 code_paths: Sequence[str], created_at: datetime | None = None) -> FrozenTrack:
+    """Chain a further, separately judged pre-registration after the primary freeze."""
+    verify(mission_dir)
+    ledger_path = mission_dir / LEDGER_NAME
+    with _interprocess_lock(mission_dir / ".ledger.lock"):
+        events = read_events(ledger_path)
+        if any(e["type"] == TRACK_EVENT and e["payload"]["track"] == track for e in events):
+            raise AlreadyFrozen(f"track {track} is already frozen")
+        if any(e["type"] in {OPENED_EVENT, VERDICT_EVENT} for e in events):
+            raise PreregistrationError("a track cannot be added after any evaluation was opened")
+        payload = {"track": track, "spec_name": spec_name, "document_name": document_name,
+                   **freeze_payload(mission_dir, code_paths, spec_name=spec_name,
+                                    document_name=document_name)}
+        event = _append(ledger_path, events, TRACK_EVENT, f"{payload['mission']}:{TRACK_EVENT}:{track}",
+                        payload, created_at)
+    return _track(event)
+
+
+def verify_track(mission_dir: Path, track: str) -> FrozenTrack:
+    """Recompute a chained track's bound hashes against its ledger entry."""
+    events = read_events(mission_dir / LEDGER_NAME)
+    found = [e for e in events if e["type"] == TRACK_EVENT and e["payload"]["track"] == track]
+    if len(found) != 1:
+        raise PreregistrationError(f"expected exactly one {track} track event, found {len(found)}")
+    entry = _track(found[0])
+    current = freeze_payload(mission_dir, list(entry.code_sha256), spec_name=entry.spec_name,
+                             document_name=entry.document_name)
+    if current["spec_sha256"] != entry.spec_sha256:
+        raise PreregistrationError(f"{entry.spec_name} differs from the frozen {track} track")
+    if current["document_sha256"] != entry.document_sha256:
+        raise PreregistrationError(f"{entry.document_name} differs from the frozen {track} track")
+    for name, digest in entry.code_sha256.items():
+        if current["code_sha256"][name] != digest:
+            raise PreregistrationError(f"{name} differs from the frozen {track} track")
     return entry
