@@ -174,13 +174,30 @@ a receipt is written to the ledger before evaluation reads any data.
   3-month signal needs 64 sessions under one methodology version, so it can go
   live in mid-December 2026 at the earliest.
 
-Until every requirement is met the campaign returns a typed refusal that names
-what is missing and how much exists against how much is needed:
+**A weaker proxy track.** A second pre-registration, chained after the first
+in the same ledger, asks the question from free inputs:
+
+- the signal is a monthly H100 list-price median reconstructed from archived
+  rate cards;
+- campaign 1 asks whether that signal leads the next reported quarter's growth
+  acceleration in hyperscaler capex and in NVDA, AMD and AVGO revenue, using
+  SEC XBRL facts as filed; and
+- campaign 2 asks whether forward 1-month basket returns beat SMH.
+
+[Its document](research/missions/gpu-leads-revisions/PROXY-PREREGISTRATION.md)
+gives three reasons it is weaker: the signal is list prices, the quarterly
+outcomes are coarse, and the pre-freeze history is public. A proxy PASS is
+never reported as a primary PASS. The proxy track is waiting for the
+back-series, the XBRL facts and the price files, plus 12 holdout months.
+
+Until every requirement is met, each track returns a typed refusal. The
+refusal names what is missing, how much exists and how much is needed:
 
 ```bash
-uv run python -m research.prereg.gpu_leads_revisions verify   # recompute the ledger hashes
-uv run python -m research.prereg.gpu_leads_revisions status   # requirements, signal status, refusal
-uv run python demo/snapshot_gpu_campaign.py                    # refresh the page's data snapshot
+uv run python -m research.prereg.gpu_leads_revisions verify        # recompute both tracks' ledger hashes
+uv run python -m research.prereg.gpu_leads_revisions status        # primary: requirements, signal, refusal
+uv run python -m research.prereg.gpu_leads_revisions proxy-status  # proxy: --backfill --facts --prices
+uv run python demo/snapshot_gpu_campaign.py                         # refresh the page's data snapshot
 ```
 
 The index tape is read from a sibling `../gpu-index` checkout, `$GPU_INDEX_TAPE`,
@@ -214,7 +231,7 @@ Requires Python ≥ 3.12 and [`uv`](https://github.com/astral-sh/uv).
 
 ```bash
 uv sync
-uv run pytest            # 374 tests, ~1 minute, no network, no keys
+uv run pytest            # 414 tests, ~2 minutes, no network, no keys
 ```
 
 **Choose a proposer.** The evaluator is deterministic CPU code; only the

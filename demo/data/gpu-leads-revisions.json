@@ -94,7 +94,7 @@
    }
   ]
  },
- "generated_at": "2026-10-08T21:12:49+00:00",
+ "generated_at": "2026-10-08T21:35:31+00:00",
  "mission": "gpu-leads-revisions",
  "preregistration": {
   "code_sha256": {
@@ -247,6 +247,326 @@
    ]
   }
  ],
+ "proxy": {
+  "campaign_1": {
+   "campaign": "proxy_campaign_1",
+   "reason": "data requirements are not met",
+   "refused": true,
+   "unmet": [
+    {
+     "available": 0,
+     "description": "Monthly H100 rental list-price medians, 2023-03 to 2026-06, at least 3 rate cards each",
+     "detail": "not configured: set GPU_INDEX_BACKFILL or pass a path",
+     "key": "list_price_backfill",
+     "required": 36,
+     "source": "gpu-index list-price back-series (GPU_INDEX_BACKFILL)",
+     "state": "missing",
+     "unit": "months"
+    },
+    {
+     "available": 0,
+     "description": "Filed-date-stamped XBRL capex for MSFT, AMZN, GOOGL, META, ORCL: next-quarter acceleration computable at each discovery and validation decision",
+     "detail": "not configured: set PROXY_XBRL_FACTS or pass a path",
+     "key": "xbrl_hyperscaler_capex",
+     "required": 34,
+     "source": "SEC XBRL facts (PROXY_XBRL_FACTS)",
+     "state": "missing",
+     "unit": "decisions"
+    },
+    {
+     "available": 0,
+     "description": "Filed-date-stamped XBRL revenue for NVDA, AMD, AVGO: next-quarter acceleration computable at each discovery and validation decision",
+     "detail": "not configured: set PROXY_XBRL_FACTS or pass a path",
+     "key": "xbrl_supplier_revenue",
+     "required": 34,
+     "source": "SEC XBRL facts (PROXY_XBRL_FACTS)",
+     "state": "missing",
+     "unit": "decisions"
+    },
+    {
+     "available": 0,
+     "description": "Holdout months (after the freeze) with a live monthly H100 signal from the public index and a matured next-quarter outcome",
+     "detail": "0 holdout months so far with a live monthly signal",
+     "key": "proxy_index_h100_holdout",
+     "required": 12,
+     "source": "public GPU rental price index",
+     "state": "missing",
+     "unit": "months"
+    },
+    {
+     "available": 0,
+     "description": "H200 monthly signal live in the same holdout months (independent check)",
+     "detail": "0 holdout months so far with a live monthly signal",
+     "key": "proxy_index_h200_holdout",
+     "required": 11,
+     "source": "public GPU rental price index",
+     "state": "missing",
+     "unit": "months"
+    },
+    {
+     "available": 0,
+     "description": "B200 monthly signal live in the same holdout months (independent check)",
+     "detail": "0 holdout months so far with a live monthly signal",
+     "key": "proxy_index_b200_holdout",
+     "required": 11,
+     "source": "public GPU rental price index",
+     "state": "missing",
+     "unit": "months"
+    }
+   ]
+  },
+  "campaign_2": {
+   "campaign": "proxy_campaign_2",
+   "reason": "sealed until proxy campaign 1 passes",
+   "refused": true,
+   "unmet": [
+    {
+     "available": 0,
+     "description": "Proxy campaign 1 verdict is PASS",
+     "detail": "proxy campaign 2 is sealed until proxy campaign 1 passes",
+     "key": "proxy_campaign_1_pass",
+     "required": 1,
+     "source": "this ledger",
+     "state": "missing",
+     "unit": "verdicts"
+    },
+    {
+     "available": 0,
+     "description": "Daily adjusted closes for the basket and SMH, every monthly decision with a closed window",
+     "detail": "not configured: set PROXY_PRICES or pass a path",
+     "key": "proxy_adjusted_closes",
+     "required": 36,
+     "source": "adjusted closes (PROXY_PRICES)",
+     "state": "missing",
+     "unit": "decisions"
+    }
+   ]
+  },
+  "spec": {
+   "data_requirements": {
+    "adjusted_closes": {
+     "columns": [
+      "symbol",
+      "day",
+      "adj_close"
+     ],
+     "file": "PROXY_PRICES",
+     "min_decision_coverage": 0.9,
+     "sealed_until": "proxy campaign 1 PASS",
+     "symbols_include_benchmarks": [
+      "SMH",
+      "QQQ",
+      "SPY"
+     ]
+    },
+    "index_holdout": {
+     "checks_min_share": 0.9,
+     "holdout_months_with_live_signal_and_matured_outcome": 12,
+     "source": "public index tape"
+    },
+    "list_price_backfill": {
+     "columns": [
+      "gpu",
+      "month",
+      "median_usd_per_gpu_hour",
+      "rate_card_count",
+      "price_type"
+     ],
+     "file": "GPU_INDEX_BACKFILL (a CSV in gpu-index, separate from the published tape)",
+     "h100_months": {
+      "from": "2023-03",
+      "to": "2026-06"
+     },
+     "min_month_coverage": 0.9
+    },
+    "xbrl_facts": {
+     "columns": [
+      "symbol",
+      "concept",
+      "period_start",
+      "period_end",
+      "value",
+      "filed",
+      "accession",
+      "xbrl_tag"
+     ],
+     "file": "PROXY_XBRL_FACTS",
+     "min_decision_coverage": 0.9
+    }
+   },
+   "decision_rule": [
+    "Stages run in order; a failed stage ends the campaign with FAIL, a stage below its floor with UNTESTABLE.",
+    "Proxy campaign 1 PASS requires every gate and both single-outcome checks in discovery, validation and holdout, and both the H200 and B200 checks in the holdout.",
+    "Proxy campaign 2 is evaluated only after a proxy campaign 1 PASS, with the same stages, gates, the always-long baseline gate and the three confirmations; its holdout also requires both checks.",
+    "A proxy PASS is not a primary PASS and is never reported as one. A proxy FAIL does not judge the primary track.",
+    "Each proxy campaign is opened once; the receipt records the content hash of every input file before evaluation reads it.",
+    "Nothing here changes after this freeze. A changed proxy is a new mission."
+   ],
+   "frozen_on": "2026-10-08",
+   "gates": {
+    "below_floor": "UNTESTABLE, never refuted",
+    "every_stage": [
+     "mean monthly capture positive (after base costs where traded)",
+     "positive in the first half and in the second half of the stage's months",
+     "positive with the single best month removed",
+     "5% lower bound of a 3-month block bootstrap of the mean positive (2000 resamples, seed from the proxy pre-registration hash)",
+     "positive at twice the base trading cost (traded outcomes only)"
+    ],
+    "holdout_checks": "the same capture with the H200 signal and with the B200 signal must each have a positive mean",
+    "sample_floor": {
+     "min_months": {
+      "discovery": 12,
+      "holdout": 12,
+      "validation": 12
+     },
+     "min_state_share": 0.2
+    }
+   },
+   "hypothesis": "When the 3-month change in the monthly H100 rental list-price median is positive, the next reported quarter shows faster year-on-year growth than the last reported quarter in hyperscaler capex and in NVDA, AMD and AVGO revenue, by more than the running average acceleration, and by less when it is negative. Only if that holds: the basket's forward returns beat SMH.",
+   "mission": "gpu-leads-revisions",
+   "proxy_campaign_1": {
+    "acceleration": "growth of the next quarter first filed after the decision minus growth of the last quarter filed before it; the year-ago base of the next quarter must be known at the decision",
+    "bootstrap_block_months": 3,
+    "both_required": "the capex capture alone and the revenue capture alone must each have a positive mean in every stage",
+    "capture": "position * (A - mean of every A already matured at the decision); at least 3 matured A are required. The stage series is the mean of the capex capture and the revenue capture on months where both exist.",
+    "discrete_quarter": "a directly reported 80-100 day value, else the fiscal year-to-date value minus the prior year-to-date value with the same start; the latest filing on or before the as-of date wins",
+    "growth": "log(quarter / the quarter ending 365 days earlier, within 10 days)",
+    "outcomes": {
+     "hyperscaler_capex": {
+      "basket": [
+       "MSFT",
+       "AMZN",
+       "GOOGL",
+       "META",
+       "ORCL"
+      ],
+      "concept": "capex",
+      "min_names": 3,
+      "xbrl_elements": "PaymentsToAcquirePropertyPlantAndEquipment; for AMZN PaymentsToAcquireProductiveAssets"
+     },
+     "supplier_revenue": {
+      "basket": [
+       "NVDA",
+       "AMD",
+       "AVGO"
+      ],
+      "concept": "revenue",
+      "min_names": 3,
+      "xbrl_elements": "RevenueFromContractWithCustomerExcludingAssessedTax, else Revenues"
+     }
+    },
+    "point_in_time": "only XBRL facts with a filing date before the decision session are known at the decision; the outcome matures on the filing date of the next quarter",
+    "question": "Does the GPU signal lead the next reported quarter's acceleration in hyperscaler capex growth and in NVDA, AMD and AVGO revenue growth?",
+    "reported_only": [
+     "NVDA Data Center segment revenue",
+     "CRWV and NBIS revenue"
+    ],
+    "traded": false
+   },
+   "proxy_campaign_2": {
+    "base_cost_bps_per_side": 5,
+    "basket": [
+     "NVDA",
+     "AMD",
+     "AVGO",
+     "TSM",
+     "MU",
+     "SMCI",
+     "ORCL",
+     "MSFT",
+     "AMZN",
+     "GOOGL",
+     "META",
+     "CRWV",
+     "NBIS"
+    ],
+    "bootstrap_block_months": 3,
+    "capture": "position * Y - cost; cost = cost_bps * |position - previous position| * 2 legs / 10000; a month without a signal is flat",
+    "confirmation_rule": "position * excess return must have a positive mean in every stage (sign only)",
+    "confirmations": [
+     {
+      "benchmark": "QQQ",
+      "months": 1
+     },
+     {
+      "benchmark": "SMH",
+      "months": 3
+     },
+     {
+      "benchmark": "QQQ",
+      "months": 3
+     }
+    ],
+    "elevated_cost_bps_per_side": 10,
+    "extra_gate": "mean capture after base costs exceeds the mean of always holding the basket against SMH",
+    "min_names": 8,
+    "prices": "daily adjusted closes; names without a close at both ends of a window are left out of that window",
+    "primary": {
+     "benchmark": "SMH",
+     "months": 1
+    },
+    "question": "Does the GPU signal lead forward returns of an equal-weight AI-infrastructure basket?",
+    "runs_only_if": "proxy campaign 1 verdict is PASS; otherwise sealed and never evaluated",
+    "traded": true
+   },
+   "relation_to_primary": "A second, weaker track chained after the primary pre-registration in the same ledger. It does not replace, amend or relax the primary track, whose outcome (paid consensus revisions) remains the primary campaign 1 outcome and remains unavailable. Each track is judged once and separately.",
+   "schema": "preregistration/1",
+   "signal": {
+    "checks": [
+     "H200",
+     "B200"
+    ],
+    "decision_grid": "the first XNYS session of each calendar month",
+    "definition": "log(M_(m-1) / M_(m-4)) at the first session of month m, where M is the monthly value for a completed month",
+    "position": "+1 if the change is above zero, -1 if below; a month without both values, or with no change, is not evaluated",
+    "primary": "H100",
+    "sources": {
+     "checks": "H200 and B200 from the public index tape, holdout only",
+     "discovery_and_validation": "a reconstructed monthly H100 rental LIST-PRICE median from archived public rate cards, a separate file in gpu-index; a month counts only with price_type=list_price and at least 3 rate cards",
+     "holdout": "the mean of the public index's published H100 session fixings in the month, read point-in-time at 14:30 UTC on the decision session; a month counts only if 90% of its sessions have a fixing, and the four months of a window must share one methodology version"
+    }
+   },
+   "stages": {
+    "discovery": {
+     "end": "2024-12-31",
+     "start": "2023-07-01"
+    },
+    "embargo": {
+     "end": "2026-10-08",
+     "note": "a discovery or validation decision counts only if its outcome window closed on or before 2026-10-08",
+     "start": "2026-08-01"
+    },
+    "holdout": {
+     "closes_after_evaluable_months": 12,
+     "start": "2026-10-09"
+    },
+    "validation": {
+     "end": "2026-07-31",
+     "start": "2025-01-01"
+    }
+   },
+   "track": "proxy",
+   "what_this_cannot_say": "A proxy PASS would say that a list-price signal carried information about the next quarter's reported growth acceleration for these names over these dates. It would be weaker evidence than the primary track: list prices are not transactions, quarterly outcomes are few and overlapping, and the pre-freeze history is public. It is not a trading signal. Research only; not investment advice.",
+   "why_weaker": [
+    "The discovery and validation signal is a reconstructed monthly median of archived public rate cards: list prices, not transactions, and not the public index's methodology.",
+    "Reported quarterly results move four times a year, so the outcome series is short and heavily overlapping; consensus revisions would move with every analyst update.",
+    "XBRL facts, prices and archived rate cards for 2023 to 2026 are public. This repository had not read them when this was frozen, but they are not unknowable. Only the holdout, which begins after the freeze, is untouched by construction."
+   ]
+  },
+  "track": {
+   "code_sha256": {
+    "research/prereg/gates.py": "57b96909adc12132134bf90da56f0557ab3603525230e6655cd4d037ec148f4a",
+    "research/prereg/gpu_campaign.py": "55a846cd708b4abc1f4adb5522c98390cd176892dfc4bf97d575ea91cf8a8398",
+    "research/prereg/gpu_signal.py": "56cfdc27fa20f15eadfa6db925a594cdfa3dbc9c930b4f0c9420799811d0e6ce",
+    "research/prereg/proxy_campaign.py": "1402708598966efc635374285622bcd93c44918378548b0b6bc91c587edcd4b9",
+    "research/prereg/xnys.py": "6770f2969a542e463318a7e052d701bb989ab204d9fc0b552f015010ee7a5942"
+   },
+   "document_sha256": "08d2cf270197e574e66ccc75568119fba1a4334ca37dbe10e95d735ed97e7234",
+   "frozen_at": "2026-10-08T21:31:34.399689+00:00",
+   "ledger_event_hash": "e39fe08f22d660ed0814ddede80c7f13b367a77aa74810c659acb96d062196e7",
+   "spec_sha256": "491a9ba659a4bbc8bd0d3e676c1714dc2cc226603ddf0ae8b11a24a8b9704142"
+  }
+ },
  "series": {
   "B200": {
    "points": [

@@ -252,3 +252,12 @@ def test_the_receipt_records_input_hashes_and_tracks_close_after_opening(
     with pytest.raises(ledger.PreregistrationError, match="after any evaluation"):
         ledger.freeze_track(proxy_copy, "another", spec_name=mission.PROXY_SPEC_NAME,
                             document_name=mission.PROXY_DOC_NAME, code_paths=mission.PROXY_BOUND_CODE)
+
+
+def test_the_demo_snapshot_carries_the_proxy_track_and_no_result() -> None:
+    snapshot = json.loads((ledger.ROOT / "demo" / "data" / "gpu-leads-revisions.json")
+                          .read_text(encoding="utf-8"))
+    track = ledger.verify_track(mission.MISSION_DIR, mission.PROXY_TRACK)
+    assert snapshot["proxy"]["track"]["ledger_event_hash"] == track.event_hash
+    assert snapshot["proxy"]["spec"] == mission.load_proxy_spec()
+    assert snapshot["proxy"]["campaign_1"]["refused"] is True

@@ -269,6 +269,26 @@
     $('cp-cannot').textContent = spec.what_this_cannot_say;
   }
 
+  function renderProxy(proxy) {
+    if (!proxy) return;
+    const spec = proxy.spec;
+    $('cp-proxy-relation').textContent = spec.relation_to_primary;
+    const dl = $('cp-proxy-hashes');
+    dl.append(el('dt', {}, 'Track event hash'), el('dd', { class: 'cp-lead' }, proxy.track.ledger_event_hash));
+    dl.append(el('dt', {}, 'Frozen at (UTC)'), el('dd', {}, proxy.track.frozen_at.replace('T', ' ').replace(/\.\d+/, '')));
+    dl.append(el('dt', {}, 'proxy-preregistration.json'), el('dd', {}, proxy.track.spec_sha256));
+    list('cp-proxy-weaker', spec.why_weaker);
+    const c1 = spec.proxy_campaign_1;
+    list('cp-proxy-asks', [
+      `Signal: ${spec.signal.definition}. Discovery and validation source: ${spec.signal.sources.discovery_and_validation}.`,
+      `Proxy campaign 1: ${c1.question} Outcome: ${c1.acceleration}.`,
+      `Proxy campaign 2: ${spec.proxy_campaign_2.question} Primary: 1-month excess return against ` +
+        `${spec.proxy_campaign_2.primary.benchmark}. Runs only if ${spec.proxy_campaign_2.runs_only_if}.`,
+    ]);
+    table('cp-proxy-requirements', ['Requirement', 'Source', 'Have / need', 'State'],
+      reqRows([...proxy.campaign_1.unmet, ...proxy.campaign_2.unmet]));
+  }
+
   function renderVerdict(data) {
     $('cp-verdict-title').textContent = 'Refusing to evaluate: the data has not landed';
     const n = data.campaign_1.unmet.length;
@@ -292,6 +312,7 @@
     renderLedger(data.preregistration);
     renderFeed(data);
     renderRequirements(data);
+    renderProxy(data.proxy);
     $('cp-generated').textContent = `Snapshot generated ${data.generated_at.replace('T', ' ').replace('+00:00', ' UTC')} ` +
       `for session ${data.as_of_session}, from ${data.tape.source} (sha256 ${data.tape.sha256.slice(0, 16)}…).`;
   }
