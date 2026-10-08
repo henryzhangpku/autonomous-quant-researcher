@@ -1,3 +1,4 @@
 data/vendor_api_*.json merge=keepLocal
 data/vendor_api_*.json merge=ours
 *.sh text eol=lf
+research/missions/*/ledger.jsonl -text

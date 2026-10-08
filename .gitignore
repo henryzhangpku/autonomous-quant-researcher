@@ -33,3 +33,6 @@ Thumbs.db
 # Demo build output (deployed by the Pages workflow)
 _site/
 research/missions/*/fits/*/filtered.csv.gz
+
+# Pre-registration ledgers are committed evidence; their lock file is not
+research/missions/*/.ledger.lock
