@@ -187,8 +187,28 @@ in the same ledger, asks the question from free inputs:
 [Its document](research/missions/gpu-leads-revisions/PROXY-PREREGISTRATION.md)
 gives three reasons it is weaker: the signal is list prices, the quarterly
 outcomes are coarse, and the pre-freeze history is public. A proxy PASS is
-never reported as a primary PASS. The proxy track is waiting for the
-back-series, the XBRL facts and the price files, plus 12 holdout months.
+never reported as a primary PASS.
+
+**What happened when the data landed (8 Oct 2026), all in the ledgers:**
+
+- **Proxy v1: UNTESTABLE.** Its discovery stage had 8 evaluable months against a
+  floor of 12; the archive kept too few 2023 rate cards.
+- **Proxy v2: UNTESTABLE**, also 8. Frozen before any outcome was computed, with
+  only the stage dates changed; its decision grid started at discovery, so the
+  frozen warm-up rule consumed its first months.
+- **Proxy v3 ([its own mission](research/missions/gpu-leads-revisions-v3/PREREGISTRATION.md),
+  because the first ledger accepts no new tracks once an evaluation is opened):
+  FAIL in discovery.** The mean capture was positive and positive in the first
+  half, but negative in the second half, with the bootstrap lower bound below
+  zero; the supplier-revenue leg was positive and the hyperscaler-capex leg
+  negative. Read with its history: a third attempt, on list prices. The likely
+  culprit is the trap the idea always had: H100 list prices fell through 2024
+  as supply arrived, while hyperscaler capex accelerated.
+
+The primary track, on licensed data, is untouched and still waiting.
+
+Status note, 8 Oct 2026: CME's H100 and B200 rental index futures, announced
+for 5 October, are not trading; the CFTC extended its review to 9 November.
 
 Until every requirement is met, each track returns a typed refusal. The
 refusal names what is missing, how much exists and how much is needed:
