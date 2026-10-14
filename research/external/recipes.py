@@ -13,7 +13,9 @@ whose string fields are identities (such as an observation name).
   operator semantics (sign flips, child signs, lookback parameters), the
   family is the set of input paths, each as input, net sign and lookback
   bucket: ``neg(ewm21(ret))`` and ``rank(neg(ewm21(ret)))`` are both
-  ``ret:-:1m``. Without semantics it falls back to the top-level operator
+  ``ret:-:1m``. An input the vocabulary marks as integrating another (log
+  price integrates return) is named by its base, so ``diff(logprice, 126)``
+  and ``rolling_sum(ret, 126)`` share a family. Without semantics it falls back to the top-level operator
   plus the identities read. A campaign admits at most ``quota`` recipes per
   family.
 """
@@ -89,21 +91,32 @@ def _bucket(days: float) -> str:
     return next(label for bound, label in HORIZON_BUCKETS if days <= bound)
 
 
-def _paths(node: Mapping[str, Any], operators: Mapping[str, Any], sign: int,
-           horizon: float, out: set[str]) -> None:
+def _paths(node: Mapping[str, Any], vocabulary: Mapping[str, Any], sign: int,
+           horizon: float, differenced: bool, out: set[str]) -> None:
+    operators = vocabulary.get("operators") or {}
     semantics = (operators.get(node["op"]) or {}).get("semantics") or {}
     sign *= int(semantics.get("sign", 1))
     horizon += sum(float(node[p]) for p in semantics.get("horizon_params", [])
                    if isinstance(node.get(p), (int, float)) and not isinstance(node.get(p), bool))
+    differenced = differenced or bool(semantics.get("differences"))
     children = [(k, v) for k, v in node.items() if isinstance(v, dict)]
     if not children:
+        observed = vocabulary.get("observation_semantics") or {}
         identities = sorted(v for k, v in node.items() if k != "op" and isinstance(v, str))
         for name in identities or [node["op"]]:
-            out.add(f"{name}:{'+' if sign > 0 else '-'}:{_bucket(horizon)}")
+            base = (observed.get(name) or {}).get("integrates")
+            path_horizon = horizon
+            if base:
+                # an integrated input is its base series summed: a difference of it
+                # is a sum of the base; an undifferenced level reaches back to the start
+                name = base
+                if not differenced:
+                    path_horizon = math.inf
+            out.add(f"{name}:{'+' if sign > 0 else '-'}:{_bucket(path_horizon)}")
         return
     child_signs = semantics.get("child_signs", {})
     for key, child in children:
-        _paths(child, operators, sign * int(child_signs.get(key, 1)), horizon, out)
+        _paths(child, vocabulary, sign * int(child_signs.get(key, 1)), horizon, differenced, out)
 
 
 def semantic_family(document: Mapping[str, Any], vocabulary: Mapping[str, Any]) -> str | None:
@@ -111,7 +124,7 @@ def semantic_family(document: Mapping[str, Any], vocabulary: Mapping[str, Any]) 
     if not any((spec or {}).get("semantics") for spec in operators.values()):
         return None
     paths: set[str] = set()
-    _paths(document["signal"], operators, 1, 0.0, paths)
+    _paths(document["signal"], vocabulary, 1, 0.0, False, paths)
     return "+".join(sorted(paths))
 
 
