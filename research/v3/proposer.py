@@ -6,6 +6,7 @@ import copy
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass
 from typing import Any, Mapping, Protocol, Sequence
 
@@ -166,8 +167,43 @@ PROPOSAL_JSON_SCHEMA: dict[str, Any] = {
 }
 
 
+def _split_feature(observation: str) -> tuple[str, str] | None:
+    """"feature:portfolio_signal.cboe_vrp" -> ("portfolio_signal", "cboe_vrp")."""
+    if not observation.startswith("feature:"):
+        return None
+    family, _, metric = observation[len("feature:"):].partition(".")
+    if not family or not metric:
+        raise ValueError(f"unsupported feature atom: {observation}")
+    return family, metric
+
+
+def _feature_observation_schema(family: str, metrics: Sequence[str]) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            "obs": {"enum": ["feature"]},
+            "family": {"enum": [family]},
+            "metric": {"enum": sorted(metrics)},
+        },
+        "required": ["obs", "family", "metric"],
+        "additionalProperties": False,
+    }
+
+
 def _atomic_signal_schema(atom: str) -> dict[str, Any]:
     op, observation = atom.split(":", 1)
+    feature = _split_feature(observation)
+    if feature is not None and op in {"lt", "lte", "gt", "gte"}:
+        return {
+            "type": "object",
+            "properties": {
+                "op": {"enum": [op]},
+                "observation": _feature_observation_schema(feature[0], [feature[1]]),
+                "value": {"$ref": "#/$defs/bounded_number"},
+            },
+            "required": ["op", "observation", "value"],
+            "additionalProperties": False,
+        }
     if op == "observed" and observation == "first_touch_before_entry":
         return {
             "type": "object",
@@ -198,6 +234,10 @@ def _atomic_signal_schema(atom: str) -> dict[str, Any]:
 
 def _atomic_signal_document(atom: str) -> dict[str, Any]:
     op, observation = atom.split(":", 1)
+    feature = _split_feature(observation)
+    if feature is not None:
+        return {"op": op, "observation": {"obs": "feature", "family": feature[0],
+                                          "metric": feature[1]}, "value": 0.0}
     if op == "observed":
         return {
             "op": "observed",
@@ -257,6 +297,36 @@ def _build_compound_lanes() -> tuple[str, ...]:
 COMPOUND_LANES = _build_compound_lanes()
 COMPOUND_LANE_FAMILIES = {lane: _lane_family(lane) for lane in COMPOUND_LANES}
 
+# Intraday atoms a daily feature condition is paired with in a feature campaign.
+FEATURE_PAIR_ATOMS = (
+    "lt:return_from_open", "gt:return_from_open",
+    "lt:return_between", "observed:first_touch_before_entry",
+)
+
+
+def is_feature_atom(family: str) -> bool:
+    return ":feature:" in family and family.count(":") == 2
+
+
+def compound_lanes_for(required_hypothesis_families: Sequence[str]) -> tuple[str, ...]:
+    """The compound-lane catalog a campaign walks after its atomic schedule.
+
+    A campaign whose schedule names feature atoms pairs each of them with
+    each intraday atom (the daily condition gates an intraday pattern);
+    otherwise it is the fixed 24-lane price catalog."""
+    feature_atoms = sorted(f for f in required_hypothesis_families if is_feature_atom(f))
+    if not feature_atoms:
+        return COMPOUND_LANES
+    lanes = [f"and|{feature}|{atom}" for feature in feature_atoms for atom in FEATURE_PAIR_ATOMS]
+    families = [_lane_family(lane) for lane in lanes]
+    if len(set(families)) != len(families):
+        raise RuntimeError("feature compound lane families are not unique")
+    return tuple(lanes)
+
+
+def lane_family(lane: str) -> str:
+    return COMPOUND_LANE_FAMILIES.get(lane) or _lane_family(lane)
+
 
 def _compound_lane_signal_schema(lane: str) -> dict[str, Any]:
     root, left, right = lane.split("|", 2)
@@ -297,15 +367,40 @@ def _spread_variant_schema(variant: str) -> dict[str, Any]:
     }
 
 
+def proposal_schema(features: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """The proposal schema; feature keys ("family.metric") add a feature
+    observation restricted to exactly those metrics."""
+    schema = copy.deepcopy(PROPOSAL_JSON_SCHEMA)
+    by_family: dict[str, list[str]] = {}
+    for key in features or {}:
+        family, _, metric = key.partition(".")
+        by_family.setdefault(family, []).append(metric)
+    if by_family:
+        defs = schema["$defs"]
+        defs["feature_observation"] = {"anyOf": [
+            _feature_observation_schema(family, metrics)
+            for family, metrics in sorted(by_family.items())
+        ]}
+        defs["numeric_observation"]["anyOf"].append({"$ref": "#/$defs/feature_observation"})
+    return schema
+
+
+_LANE_PATTERN = re.compile(r"Required next compound lane: ([^;\s]+);")
+# Families end at a sentence break; a feature family carries a dot inside it.
+_FAMILIES_PATTERN = re.compile(r"Required next hypothesis family must be one of: (.+?)\.(?:\s|$)")
+
+
 def proposal_schema_for_diversity(
     diversity_feedback: Sequence[str],
+    features: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Constrain model output to the coordinator's current family lane."""
-    schema = copy.deepcopy(PROPOSAL_JSON_SCHEMA)
+    schema = proposal_schema(features)
     combined = " ".join(str(item) for item in diversity_feedback)
     signal_schema: dict[str, Any] | None = None
     if "Required next compound lane:" in combined:
-        lane = next((lane for lane in COMPOUND_LANES if lane in combined), None)
+        match = _LANE_PATTERN.search(combined)
+        lane = match.group(1) if match and match.group(1).count("|") == 2 else None
         if lane is not None:
             signal_schema = _compound_lane_signal_schema(lane)
             variant = next(
@@ -317,12 +412,14 @@ def proposal_schema_for_diversity(
                     _spread_variant_schema(variant)
                 )
     elif "Required next hypothesis family" in combined:
-        scheduled = (
-            "lt:return_between",
-            "lt:return_from_open",
-            "observed:first_touch_before_entry",
-        )
-        allowed = [family for family in scheduled if family in combined]
+        match = _FAMILIES_PATTERN.search(combined)
+        allowed = []
+        for family in (match.group(1).split(", ") if match else ()):
+            try:
+                _atomic_signal_schema(family)
+            except ValueError:
+                continue
+            allowed.append(family)
         if allowed:
             signal_schema = {
                 "anyOf": [_atomic_signal_schema(family) for family in allowed]
@@ -372,8 +469,24 @@ def parse_proposal_json(content: str) -> DeclarativeProposal:
     )
 
 
+def _feature_prompt(features: Mapping[str, str]) -> str:
+    if not features:
+        return ""
+    lines = "\n".join(f"- {key}: {text}" for key, text in sorted(features.items()))
+    return f"""
+Daily features (known before the session opens: the value as of the PRIOR close):
+{lines}
+A feature observation is {{"obs":"feature","family":<family>,"metric":<metric>}} for one key
+above (family before the dot, metric after it), compared with lt/lte/gt/gte to a number in
+the feature's own units. It has no minute. A missing value makes its comparison False, so a
+feature comparison may not sit under not. Template:
+- gt:feature:<family>.<metric> -> {{"op":"gt","observation":{{"obs":"feature","family":"<family>","metric":"<metric>"}},"value":0.0}}
+"""
+
+
 def build_prompt(*, mission: str, previous_attempts: Sequence[Mapping[str, Any]] = (),
-                 diversity_feedback: Sequence[str] = ()) -> str:
+                 diversity_feedback: Sequence[str] = (),
+                 features: Mapping[str, str] | None = None) -> str:
     """Build the bounded vocabulary prompt supplied to an untrusted model."""
     compact_attempts = [
         {
@@ -417,15 +530,17 @@ and, or, or not until the frozen family schedule is satisfied. Exact root templa
 - lt:return_between -> {{"op":"lt","observation":{{"obs":"return_between","start_minute":570,"end_minute":600}},"value":-0.005}}
 - observed:first_touch_before_entry -> {{"op":"observed","observation":{{"obs":"first_touch_before_entry","after_minute":570,"open_offset":-0.005}}}}
 Set entry_minute later than every observation in the chosen template.
-Diversity target (highest priority):\n{diversity}
+{_feature_prompt(features or {})}Diversity target (highest priority):\n{diversity}
 Past formulation/admission reasons (never copy their omitted documents):\n{feedback}\n"""
 
 
 class DeclarativeProposer:
     """Injectable proposer that validates every completion before returning it."""
 
-    def __init__(self, complete: Completion):
+    def __init__(self, complete: Completion, *, features: Mapping[str, str] | None = None):
         self._complete = complete
+        # feature key ("family.metric") -> one-line description shown to the model
+        self.features = dict(features or {})
 
     def propose(self, *, mission: str, previous_attempts: Sequence[Mapping[str, Any]] = (),
                 diversity_feedback: Sequence[str] = ()) -> DeclarativeProposal:
@@ -433,6 +548,7 @@ class DeclarativeProposer:
             mission=mission,
             previous_attempts=previous_attempts,
             diversity_feedback=diversity_feedback,
+            features=self.features,
         )
         return parse_proposal_json(self._complete(prompt))
 
@@ -441,7 +557,8 @@ class OpenAICompatibleDeclarativeProposer(DeclarativeProposer):
     """OpenAI-compatible chat adapter whose response schema cannot contain code."""
 
     def __init__(self, *, model: str | None = None, base_url: str | None = None,
-                 api_key: str | None = None, timeout: float = 120.0):
+                 api_key: str | None = None, timeout: float = 120.0,
+                 features: Mapping[str, str] | None = None):
         from openai import OpenAI
 
         from research.lab.endpoints import resolve_endpoint
@@ -455,7 +572,7 @@ class OpenAICompatibleDeclarativeProposer(DeclarativeProposer):
         # One resolver, both proposers, one answer.
         self.endpoint = resolve_endpoint()
         self.model = model or self.endpoint.model
-        self._response_schema = PROPOSAL_JSON_SCHEMA
+        self._response_schema = proposal_schema(features)
         # Probed once and remembered: json_schema is an OpenAI extension and
         # DeepSeek rejects it outright.
         self._json_schema_supported = True
@@ -476,13 +593,13 @@ class OpenAICompatibleDeclarativeProposer(DeclarativeProposer):
             )
         else:
             self._client = OpenAI(api_key=resolved_api_key, timeout=timeout)
-        super().__init__(self._complete_openai)
+        super().__init__(self._complete_openai, features=features)
 
     def propose(self, *, mission: str,
                 previous_attempts: Sequence[Mapping[str, Any]] = (),
                 diversity_feedback: Sequence[str] = ()) -> DeclarativeProposal:
         previous_schema = self._response_schema
-        self._response_schema = proposal_schema_for_diversity(diversity_feedback)
+        self._response_schema = proposal_schema_for_diversity(diversity_feedback, self.features)
         try:
             return super().propose(
                 mission=mission,

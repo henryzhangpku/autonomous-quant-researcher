@@ -7,6 +7,7 @@ provider clients, credentials, network handles, or serializable raw records.
 
 from __future__ import annotations
 
+import bisect
 import hashlib
 import json
 import math
@@ -40,6 +41,20 @@ SPLIT_DATES = {
 
 class FeatureContractError(ValueError):
     pass
+
+
+def _is_metric_name(name: object) -> bool:
+    return (isinstance(name, str) and 0 < len(name) <= 40
+            and all(c.islower() or c.isdigit() or c == "_" for c in name))
+
+
+def parse_feature_key(key: str) -> tuple[str, str]:
+    """A coverage requirement is a family ("flow") or one family metric
+    ("portfolio_signal.cboe_vrp"); the metric is "" for a family-level key."""
+    family, _, metric = str(key).partition(".")
+    if family not in FAMILIES or (metric and not _is_metric_name(metric)):
+        raise FeatureContractError(f"unknown feature requirement {key!r}")
+    return family, metric
 
 
 class CoverageState(StrEnum):
@@ -688,29 +703,66 @@ def _dark_pool_features(export: FeatureExport, symbol: str, decision: datetime,
     )
 
 
+# id(export) -> (export, index); holding the export keeps its id from being reused.
+_PORTFOLIO_INDEX: dict[int, tuple[FeatureExport, dict[str, Any]]] = {}
+
+
+def _portfolio_index(export: FeatureExport) -> dict[str, Any]:
+    """Per-symbol daily windows sorted by observation time, and records keyed by
+    (symbol, event time), with every timestamp parsed once."""
+    cached = _PORTFOLIO_INDEX.get(id(export))
+    if cached is not None and cached[0] is export:
+        return cached[1]
+    windows: dict[str, list[tuple[datetime, datetime, datetime]]] = {}
+    for window in export.windows:
+        if window.observation_kind == "daily_close":
+            windows.setdefault(window.symbol, []).append((
+                _timestamp(window.observation_time, "observation_time"),
+                _timestamp(window.available_at, "available_at"),
+                _timestamp(window.ingested_at, "ingested_at"),
+            ))
+    for rows in windows.values():
+        rows.sort(key=lambda row: row[0])
+    records: dict[tuple[str, datetime], list[tuple[str, float, datetime, datetime]]] = {}
+    for item in export.records:
+        if isinstance(item, PortfolioSignalRecord):
+            records.setdefault((item.symbol, _timestamp(item.event_time, "event_time")), []).append(
+                (item.metric, float(item.value), _timestamp(item.available_at, "available_at"),
+                 _timestamp(item.ingested_at, "ingested_at")))
+    index = {"windows": windows, "times": {sym: [row[0] for row in rows]
+                                           for sym, rows in windows.items()},
+             "records": records}
+    if len(_PORTFOLIO_INDEX) >= 16:
+        _PORTFOLIO_INDEX.clear()
+    _PORTFOLIO_INDEX[id(export)] = (export, index)
+    return index
+
+
 def _portfolio_signal_features(export: FeatureExport, symbol: str,
                                decision: datetime) -> DerivedFamily:
     """The latest daily scores from a session strictly before the decision day."""
     decision_day = decision.astimezone(ET).date()
-    windows = [
-        window for window in _window_candidates(export, symbol, decision, {"daily_close"},
-                                                same_day=False)
-        if _timestamp(window.observation_time, "observation_time").astimezone(ET).date()
-        < decision_day
-    ]
-    if not windows:
+    index = _portfolio_index(export)
+    rows = index["windows"].get(symbol, [])
+    position = bisect.bisect_right(index["times"].get(symbol, []), decision)
+    as_of = None
+    # newest first: the first window that is visible, and from an earlier day, is the latest
+    for observed, available, ingested in reversed(rows[:position]):
+        if (decision - observed).total_seconds() > PORTFOLIO_SIGNAL_MAX_STALENESS_SECONDS:
+            break
+        if (available <= decision and ingested <= decision
+                and observed.astimezone(ET).date() < decision_day):
+            as_of = observed
+            break
+    if as_of is None:
         return _uncovered("portfolio_signal", export)
-    window = max(windows, key=lambda item: _timestamp(item.observation_time, "observation_time"))
-    as_of = _timestamp(window.observation_time, "observation_time")
     staleness = (decision - as_of).total_seconds()
     if staleness < 0 or staleness > PORTFOLIO_SIGNAL_MAX_STALENESS_SECONDS:
         return _uncovered("portfolio_signal", export)
     metrics = {
-        item.metric: float(item.value) for item in export.records
-        if isinstance(item, PortfolioSignalRecord) and item.symbol == symbol
-        and _timestamp(item.event_time, "event_time") == as_of
-        and _timestamp(item.available_at, "available_at") <= decision
-        and _timestamp(item.ingested_at, "ingested_at") <= decision
+        metric: value for metric, value, available, ingested
+        in index["records"].get((symbol, as_of), [])
+        if available <= decision and ingested <= decision
     }
     if not metrics:
         return _uncovered("portfolio_signal", export)
@@ -770,10 +822,19 @@ class CoverageReport:
     covered_iso_weeks: int
     required_iso_weeks: int
     source_available: bool
+    # "" covers the family as a whole; a metric name covers only that metric,
+    # so a requirement on a short-history metric cannot ride on its family.
+    metric: str = ""
+
+    @property
+    def key(self) -> str:
+        return f"{self.family}.{self.metric}" if self.metric else self.family
 
     def validate(self) -> None:
         if self.family not in FAMILIES or self.split not in COVERAGE_WEEK_FLOORS:
             raise FeatureContractError("unknown coverage family or split")
+        if self.metric and not _is_metric_name(self.metric):
+            raise FeatureContractError("coverage metric must be snake_case")
         if (self.eligible_sessions < 0 or not 0 <= self.covered_sessions <= self.eligible_sessions
                 or self.covered_iso_weeks < 0
                 or self.required_iso_weeks != COVERAGE_WEEK_FLOORS[self.split]):
@@ -797,7 +858,10 @@ def coverage_report(
     snapshots: Iterable[FeatureSnapshot],
     *,
     source_available: bool = True,
+    metric: str = "",
 ) -> CoverageReport:
+    """Coverage of one family, or of one metric of it when `metric` is set:
+    a session counts only if that metric has a value."""
     if family not in FAMILIES or split not in COVERAGE_WEEK_FLOORS:
         raise FeatureContractError("unknown coverage family or split")
     values = tuple(snapshots)
@@ -808,7 +872,8 @@ def coverage_report(
         if day < split_start or (split_end is not None and day > split_end):
             raise FeatureContractError("feature snapshot is outside the declared split")
     covered = [snapshot for snapshot in values
-               if snapshot.family(family) is not None and snapshot.family(family).covered]
+               if snapshot.family(family) is not None and snapshot.family(family).covered
+               and (not metric or snapshot.family(family).metric(metric) is not None)]
     ratio = len(covered) / len(values) if values else 0.0
     weeks = len({
         _timestamp(snapshot.decision_time, "decision_time").astimezone(ET).date().isocalendar()[:2]
@@ -822,7 +887,8 @@ def coverage_report(
     else:
         state = CoverageState.READY
     report = CoverageReport(
-        family, split, state, len(values), len(covered), ratio, weeks, floor, source_available
+        family, split, state, len(values), len(covered), ratio, weeks, floor, source_available,
+        metric,
     )
     report.validate()
     return report
@@ -833,15 +899,15 @@ def proprietary_mission_ready(required_families: Iterable[str],
     required = set(required_families)
     if not required:
         return True
-    if not required <= FAMILIES:
-        raise FeatureContractError("unknown requested proprietary feature family")
-    indexed = {(report.family, report.split): report for report in reports}
+    for key in required:
+        parse_feature_key(key)
+    indexed = {(report.key, report.split): report for report in reports}
     for report in indexed.values():
         report.validate()
     return all(
-        indexed.get((family, split)) is not None
-        and indexed[(family, split)].state == CoverageState.READY
-        for family in required for split in COVERAGE_WEEK_FLOORS
+        indexed.get((key, split)) is not None
+        and indexed[(key, split)].state == CoverageState.READY
+        for key in required for split in COVERAGE_WEEK_FLOORS
     )
 
 
@@ -853,12 +919,14 @@ def required_family_coverage_hash(reports: Iterable[CoverageReport]) -> str:
         if not isinstance(report, CoverageReport):
             raise FeatureContractError("coverage admission requires typed reports")
         report.validate()
-        key = (report.family, report.split)
+        key = (report.key, report.split)
         if key in keys:
             raise FeatureContractError("coverage admission reports must be unique")
         keys.add(key)
-    payload = [
-        asdict(report)
-        for report in sorted(values, key=lambda item: (item.family, item.split))
-    ]
+    payload = []
+    for report in sorted(values, key=lambda item: (item.key, item.split)):
+        item = asdict(report)
+        if not item["metric"]:
+            item.pop("metric")  # family-level reports hash exactly as before
+        payload.append(item)
     return _hash(payload)
