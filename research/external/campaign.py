@@ -81,6 +81,15 @@ def judging_code_hashes() -> dict[str, str]:
     return {path: text_sha256(ROOT / path) for path in JUDGING_CODE}
 
 
+def _excerpt(value: Any, limit: int = 400) -> str:
+    """A bounded, diagnostic copy of a rejected proposal (never evaluated)."""
+    try:
+        text = json.dumps(value, sort_keys=True, default=str)
+    except (TypeError, ValueError):
+        text = repr(value)
+    return text[:limit]
+
+
 def _weakest(gates: Sequence[Mapping[str, Any]]) -> float:
     values = [g["value"] for g in gates if g.get("value") is not None]
     return min(values) if values else float("-inf")
@@ -166,7 +175,8 @@ class PortfolioCampaign:
                 descriptor = describe(recipe)
             except RecipeShapeError as exc:
                 return _append(self.ledger_path, events, "formulation_rejected", f"f{seq}",
-                               {"reason": str(exc), "source": source}, None)
+                               {"reason": str(exc), "source": source,
+                                "excerpt": _excerpt(proposal)}, None)
             reason = admission_reason(descriptor, self._descriptors(state),
                                       self.contract.family_quota)
             if reason:
@@ -309,6 +319,25 @@ class PortfolioCampaign:
             payload["semantic_hash"] = finalist["semantic_hash"]
             kind = "holdout_result" if payload["status"] == "evaluated" else "holdout_failed"
             return _append(self.ledger_path, self.events(), kind, "holdout-result", payload, None)
+
+    def rejection_feedback(self, limit: int = 8) -> list[dict[str, Any]]:
+        """Recent formulation/admission rejections, so the proposer can correct itself."""
+        out = []
+        recipes = {}
+        for event in self.events():
+            p = event["payload"]
+            if event["type"] == "discovery_attempted":
+                recipes[p["semantic_hash"]] = p["recipe"]
+            elif event["type"] == "discovery_result" and p.get("status") == "formulation_refused":
+                out.append({"kind": "vocabulary", "reason": p.get("detail", p.get("reason")),
+                            "excerpt": _excerpt(recipes.get(p["semantic_hash"]))[:200]})
+            elif event["type"] == "formulation_rejected":
+                out.append({"kind": "formulation", "reason": p["reason"],
+                            "excerpt": p.get("excerpt", "")[:200]})
+            elif event["type"] == "admission_rejected":
+                out.append({"kind": "admission", "reason": p["reason"],
+                            "family": p["descriptor"]["family"]})
+        return out[-limit:]
 
     def attempts_summary(self) -> list[dict[str, Any]]:
         """Discovery evidence only, for the proposer. Validation stays sealed."""

@@ -32,8 +32,10 @@ from research.external.proposer import ProposalError, RecipeProposer, openai_com
 from research.v3.campaign import _canonical
 
 
-def describe_evaluator(command: tuple[str, ...], cwd: str) -> dict[str, Any]:
-    proc = subprocess.run([*command, "--describe"], text=True, capture_output=True, cwd=cwd,
+def describe_evaluator(command: tuple[str, ...], cwd: str, universe: str) -> dict[str, Any]:
+    """Ask the evaluator for its identity and the vocabulary available to `universe`."""
+    proc = subprocess.run([*command, "--describe", "--config", universe], text=True,
+                          capture_output=True, cwd=cwd,
                           env=_research_environment(), timeout=300)
     if proc.returncode != 0:
         raise SystemExit(f"evaluator --describe failed: {proc.stderr.strip()[-500:]}")
@@ -57,7 +59,8 @@ def run_discovery(campaign: PortfolioCampaign, proposer: RecipeProposer,
     for _ in range(max_formulations):
         try:
             proposal = proposer.propose(mission=campaign.contract.mission, vocabulary=vocabulary,
-                                        attempts=campaign.attempts_summary())
+                                        attempts=campaign.attempts_summary(),
+                                        rejections=campaign.rejection_feedback())
         except ProposalError as exc:
             proposal = {"invalid": str(exc)}  # recorded as a formulation failure
         try:
@@ -111,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
         if (directory / "ledger.jsonl").exists():
             raise SystemExit(f"{directory} already holds a campaign")
         command = tuple(shlex.split(args.evaluator_cmd))
-        described = describe_evaluator(command, args.evaluator_cwd)
+        described = describe_evaluator(command, args.evaluator_cwd, args.universe)
         identity, vocabulary = described["evaluator"], described["vocabulary"]
         spec = ExternalEvaluatorSpec(name=identity["name"], version=identity["version"],
                                      code_hash=identity["code_hash"], command=command,
