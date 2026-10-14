@@ -30,10 +30,14 @@ from research.v3.proposer import (
     compound_lanes_for,
     lane_family,
 )
+from research.v3.program import Program
+from research.v3.quote_store import DayQuotes, QuoteAccess
 from research.v3.stage_store import StageAccess, StageManifest, materialize_stage_stores
 
 ET = ZoneInfo("America/New_York")
 MODELED_PRICE_SOURCE_ID = "modeled:prior-day-rv-black-scholes-v1"
+# Alpaca 1-minute option trade bars: real prints, not executable quotes.
+QUOTE_PRICE_SOURCE_ID = "indicative:alpaca-option-trade-bars-1m-v1"
 from research.v3.features import ET, FeatureExport, derive_feature_snapshot
 
 
@@ -109,8 +113,13 @@ def build_modeled_ledgers(candidate: FrozenCandidate, access: StageAccess,
                           *, vrp_multiple: float = 1.10,
                           features: Mapping[str, FeatureExport] | None = None,
                           symbol: str = "SPY",
+                          quotes: Mapping[str, DayQuotes] | None = None,
                           ) -> tuple[GrossTradeLedger, GrossTradeLedger]:
-    """Interpret a frozen hypothesis over one capability and retain denominators."""
+    """Interpret a frozen hypothesis over one capability and retain denominators.
+
+    With ``quotes`` (one stage's real same-day option prices) every leg is
+    priced from the last trade before entry; a leg with none is unpriced,
+    never modeled. Without them, legs are priced by the frozen model."""
     candidate.validate()
     hypothesis = parse_hypothesis(json.loads(candidate.canonical_document))
     families = _feature_families(hypothesis.signal)
@@ -125,7 +134,8 @@ def build_modeled_ledgers(candidate: FrozenCandidate, access: StageAccess,
     for session in sessions:
         sigma_daily = vol.get(previous_day) if previous_day else None
         previous_day = session.day
-        if sigma_daily is None or not session.is_full_day():
+        # only model pricing needs trailing volatility; quote pricing starts on day one
+        if (sigma_daily is None and quotes is None) or not session.is_full_day():
             continue
         entry_price = session.price_at(hypothesis.entry_minute)
         if entry_price is None:
@@ -145,14 +155,30 @@ def build_modeled_ledgers(candidate: FrozenCandidate, access: StageAccess,
         selected = interpret_signal(hypothesis, view)
         structure = make_structure(hypothesis, entry_price)
         remaining = max(1, 960 - hypothesis.entry_minute) / (252.0 * 390.0)
-        sigma_t = sigma_daily * math.sqrt(252.0) * vrp_multiple * math.sqrt(remaining)
-        signed_debit = structure.model_entry_cost(entry_price, sigma_t)
+        source = PriceSourceKind.MODELED.value
+        skip_reason = "modeled economics unavailable"
+        if quotes is None:
+            sigma_t = sigma_daily * math.sqrt(252.0) * vrp_multiple * math.sqrt(remaining)
+            signed_debit = structure.model_entry_cost(entry_price, sigma_t)
+            prices = tuple(
+                (leg.cp, leg.strike, leg.qty, leg.model_price(entry_price, sigma_t))
+                for leg in structure.legs
+            )
+        else:
+            source = PriceSourceKind.INDICATIVE.value
+            skip_reason = "no leg trade within the quote freshness window before entry"
+            book = quotes.get(session.day)
+            leg_prices = [book.price(leg.cp, leg.strike, hypothesis.entry_minute)
+                          if book is not None else None for leg in structure.legs]
+            if any(price is None for price in leg_prices):
+                signed_debit, prices = math.nan, ()
+            else:
+                signed_debit = sum(leg.qty * price
+                                   for leg, price in zip(structure.legs, leg_prices))
+                prices = tuple((leg.cp, leg.strike, leg.qty, price)
+                               for leg, price in zip(structure.legs, leg_prices))
         settlement = structure.settle(session.close)
         worst, best = _payoff_bounds(structure)
-        prices = tuple(
-            (leg.cp, leg.strike, leg.qty, leg.model_price(entry_price, sigma_t))
-            for leg in structure.legs
-        )
         priced = (
             math.isfinite(signed_debit) and best > worst
             and worst - 1e-9 <= settlement <= best + 1e-9
@@ -165,7 +191,7 @@ def build_modeled_ledgers(candidate: FrozenCandidate, access: StageAccess,
                 signed_entry_debit=signed_debit, gross_settlement=settlement,
                 best_settlement=best, worst_settlement=worst,
                 gross_pnl=settlement - signed_debit,
-                price_source=PriceSourceKind.MODELED.value,
+                price_source=source,
                 entry_legs=prices,
             )
         else:
@@ -173,8 +199,8 @@ def build_modeled_ledgers(candidate: FrozenCandidate, access: StageAccess,
                 date=session.day, selected=True, priced=False,
                 structure=structure.label, width=None, signed_entry_debit=None,
                 gross_settlement=None, best_settlement=None, worst_settlement=None,
-                gross_pnl=None, price_source=PriceSourceKind.MODELED.value,
-                skip_reason="modeled economics unavailable",
+                gross_pnl=None, price_source=source,
+                skip_reason=skip_reason,
             )
         signal_rows.append(replace(
             control_row,
@@ -183,6 +209,41 @@ def build_modeled_ledgers(candidate: FrozenCandidate, access: StageAccess,
         ))
         control_rows.append(control_row)
     return GrossTradeLedger(signal_rows), GrossTradeLedger(control_rows)
+
+
+class QuotedResearchEvaluator:
+    """Scores a frozen hypothesis on one stage's real same-day option prices.
+
+    The quote store is opened through the same stage the evaluation was
+    granted, so a discovery evaluation cannot read validation or holdout
+    prices."""
+
+    def __init__(self, quote_root: Path, program: Program,
+                 features: Mapping[str, FeatureExport] | None = None):
+        if program.price_source != "quote":
+            raise ValueError(f"{program.program_id} is not a quote-priced program")
+        self._quote_root = Path(quote_root)
+        self._program = program
+        self._features = dict(features or {})
+
+    def evaluate(self, candidate: FrozenCandidate, access: StageAccess, stage: Stage,
+                 shortlist_size: int = 1) -> Evaluation:
+        stage = Stage(stage)
+        if access.stage != stage.value or access.program != self._program:
+            raise PermissionError("stage capability does not match requested evaluation")
+        quotes = QuoteAccess(self._quote_root, stage.value, self._program)
+        signal, control = build_modeled_ledgers(candidate, access, features=self._features,
+                                                quotes=quotes.open_days())
+        evaluation = evaluate_ledger(
+            signal, stage=stage, candidate_hash=candidate.semantic_hash,
+            stage_manifest_hash=access.manifest().manifest_hash,
+            price_source_id=QUOTE_PRICE_SOURCE_ID,
+            price_source_kind=PriceSourceKind.INDICATIVE,
+            shortlist_size=shortlist_size, control_ledger=control, program=self._program,
+        )
+        return replace(evaluation, feature_manifest_hashes={
+            family: export.manifest.manifest_hash for family, export in sorted(self._features.items())
+        })
 
 
 class ModeledResearchEvaluator:
