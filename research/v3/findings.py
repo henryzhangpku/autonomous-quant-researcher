@@ -243,7 +243,7 @@ def _coverage_blocks(required_families: tuple[str, ...],
         if not isinstance(report, CoverageReport):
             raise FindingContractError("feature coverage must use typed aggregate reports")
         report.validate()
-        key = (report.family, report.split)
+        key = (report.key, report.split)
         if key in keys:
             raise FindingContractError("feature coverage reports must be unique")
         keys.add(key)
@@ -251,9 +251,12 @@ def _coverage_blocks(required_families: tuple[str, ...],
         ready = proprietary_mission_ready(required_families, values)
     except ValueError as exc:
         raise FindingContractError(str(exc)) from exc
-    records = sorted((_jsonable(report) for report in values), key=lambda item: (
-        item["family"], item["split"]
-    ))
+    records = []
+    for report in sorted(values, key=lambda item: (item.key, item.split)):
+        record = _jsonable(report)
+        if not record["metric"]:
+            record.pop("metric")  # family-level evidence keeps its original shape
+        records.append(record)
     return records, ready
 
 
@@ -611,6 +614,7 @@ def validate_portable_finding(payload: Mapping[str, Any]) -> None:
                 covered_iso_weeks=item["covered_iso_weeks"],
                 required_iso_weeks=item["required_iso_weeks"],
                 source_available=item["source_available"],
+                metric=item.get("metric", ""),
             )
             report.validate()
             typed_reports.append(report)
@@ -619,8 +623,8 @@ def validate_portable_finding(payload: Mapping[str, Any]) -> None:
     if required_family_coverage_hash(typed_reports) != reconstructed.required_family_coverage_hash:
         raise FindingContractError("feature coverage differs from frozen campaign admission")
     ready_keys = {
-        (item.get("family"), item.get("split"))
-        for item in reports if item.get("state") == CoverageState.READY.value
+        (report.key, report.split)
+        for report in typed_reports if report.state == CoverageState.READY
     }
     feature_ready = all(
         (family, stage) in ready_keys

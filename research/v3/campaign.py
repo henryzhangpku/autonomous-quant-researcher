@@ -22,11 +22,13 @@ from typing import Any
 
 from research.v3.evaluator import Evaluation, Stage
 from research.v3.features import FAMILIES as FEATURE_FAMILIES
+from research.v3.features import FeatureContractError, parse_feature_key
 from research.v3.hypothesis import (
     DiversityDescriptor,
     canonical_hypothesis,
     describe_hypothesis,
     family_is_admissible,
+    feature_reads,
     hypothesis_hash,
     is_near_duplicate,
     parse_hypothesis,
@@ -148,6 +150,11 @@ class CampaignContract:
             raise ValueError("discovery budget and family quota must be positive")
         if tuple(sorted(set(self.required_families))) != self.required_families:
             raise ValueError("required_families must be sorted and unique")
+        try:
+            for key in self.required_families:
+                parse_feature_key(key)
+        except FeatureContractError as exc:
+            raise ValueError(str(exc)) from exc
         if any(family not in FEATURE_FAMILIES or not _is_hash(value)
                for family, value in self.feature_manifest_hashes.items()):
             raise ValueError("feature manifest hashes must name known families with SHA-256 hashes")
@@ -311,6 +318,17 @@ def _candidate_record(document: Mapping[str, Any], source_hash: str,
     )
     candidate.validate()
     return _jsonable(candidate)
+
+
+def _uncovered_feature_reads(candidate: Mapping[str, Any],
+                             contract: CampaignContract) -> list[str]:
+    """Feature metrics a hypothesis reads that the contract's admitted coverage
+    does not cover (as a family or as that metric). Rejected before any trial:
+    an uncovered metric would only ever compare False."""
+    required = set(contract.required_families)
+    reads = feature_reads(json.loads(candidate["canonical_document"]))
+    return sorted(f"{family}.{metric}" for family, metric in reads
+                  if family not in required and f"{family}.{metric}" not in required)
 
 
 def _descriptor(candidate: Mapping[str, Any]) -> DiversityDescriptor:
@@ -637,6 +655,9 @@ class CampaignCoordinator:
                 reason: str | None = None
                 if state["scientific_trials"] >= self.contract.discovery_budget:
                     reason = "discovery budget is closed"
+                elif _uncovered_feature_reads(candidate, self.contract):
+                    reason = ("reads features without frozen coverage: "
+                              + ", ".join(_uncovered_feature_reads(candidate, self.contract)))
                 elif any(item["semantic_hash"] == candidate["semantic_hash"] for item in admitted_candidates):
                     reason = "semantic duplicate"
                 elif any(is_near_duplicate(descriptor, _descriptor(item)) for item in admitted_candidates):

@@ -25,10 +25,10 @@ from research.v3.evaluator import Evaluation, PriceSourceKind, Stage, evaluate_l
 from research.v3.hypothesis import interpret_signal, make_structure, parse_hypothesis
 from research.v3.ledger import GrossTradeLedger, GrossTradeRow
 from research.v3.proposer import (
-    COMPOUND_LANES,
-    COMPOUND_LANE_FAMILIES,
     DeclarativeProposer,
     ProposalError,
+    compound_lanes_for,
+    lane_family,
 )
 from research.v3.stage_store import StageAccess, StageManifest, materialize_stage_stores
 
@@ -346,8 +346,8 @@ class CampaignRuntime:
             counts = ", ".join(
                 f"{family}={count}" for family, count in sorted(family_counts.items())
             )
-            for lane in COMPOUND_LANES:
-                family = COMPOUND_LANE_FAMILIES[lane]
+            for lane in compound_lanes_for(scheduled):
+                family = lane_family(lane)
                 if family_counts.get(family, 0) < self.coordinator.contract.family_quota:
                     family_descriptors = [
                         item["candidate"]["descriptor"]
