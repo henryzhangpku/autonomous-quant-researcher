@@ -50,7 +50,7 @@ def load(directory: Path) -> tuple[PortfolioCampaign, dict[str, Any]]:
     vocabulary = json.loads((directory / "vocabulary.json").read_text())
     if hashlib.sha256(_canonical(vocabulary)).hexdigest() != contract.vocabulary_hash:
         raise SystemExit("vocabulary.json does not match the frozen vocabulary hash")
-    return PortfolioCampaign(directory, contract), vocabulary
+    return PortfolioCampaign(directory, contract, vocabulary=vocabulary), vocabulary
 
 
 def run_discovery(campaign: PortfolioCampaign, proposer: RecipeProposer,
@@ -128,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "vocabulary.json").write_text(json.dumps(vocabulary, sort_keys=True, indent=1))
         (directory / "contract.json").write_text(json.dumps(asdict(contract), sort_keys=True, indent=1))
-        campaign = PortfolioCampaign(directory, contract)
+        campaign = PortfolioCampaign(directory, contract, vocabulary=vocabulary)
         print(json.dumps({"contract_hash": contract.contract_hash(),
                           "evaluator": identity, "status": _status(campaign)}, indent=1))
         return 0

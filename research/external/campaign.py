@@ -97,10 +97,16 @@ def _weakest(gates: Sequence[Mapping[str, Any]]) -> float:
 
 class PortfolioCampaign:
     def __init__(self, root: Path, contract: PortfolioCampaignContract,
-                 evaluate: Callable[..., Any] = evaluate_portfolio_stage):
+                 evaluate: Callable[..., Any] = evaluate_portfolio_stage,
+                 vocabulary: Mapping[str, Any] | None = None):
         self.root = Path(root)
         self.contract = contract
         self._evaluate = evaluate
+        # The frozen vocabulary supplies operator semantics for families; it must
+        # be the one whose hash the contract pins.
+        if vocabulary is not None and _sha256(vocabulary) != contract.vocabulary_hash:
+            raise ContractMismatch("vocabulary does not match the frozen vocabulary hash")
+        self.vocabulary = vocabulary
         self.ledger_path = self.root / "ledger.jsonl"
         self.lock_path = self.root / ".lock"
         with _interprocess_lock(self.lock_path):
@@ -172,7 +178,7 @@ class PortfolioCampaign:
             try:
                 if not isinstance(proposal, Mapping) or set(proposal) != {"recipe", "rationale"}:
                     raise RecipeShapeError("a proposal has exactly 'recipe' and 'rationale'")
-                descriptor = describe(recipe)
+                descriptor = describe(recipe, self.vocabulary)
             except RecipeShapeError as exc:
                 return _append(self.ledger_path, events, "formulation_rejected", f"f{seq}",
                                {"reason": str(exc), "source": source,

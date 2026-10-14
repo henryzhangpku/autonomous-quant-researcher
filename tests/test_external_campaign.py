@@ -213,3 +213,60 @@ def test_prompt_examples_are_valid_and_rejections_are_fed_back(make_campaign):
     prompt = build_prompt(mission="m", vocabulary=vocabulary, rejections=feedback)
     assert "ewm(x: node, halflife: int 1..520)" in prompt
     assert "never a bare string" in prompt and "bare string input" in prompt
+
+
+SEMANTIC_VOCAB = {"schema": "example/recipe/1", "operators": {
+    "obs": {"children": [], "params": {}, "semantics": {}},
+    "neg": {"children": ["x"], "params": {}, "semantics": {"sign": -1}},
+    "sub": {"children": ["a", "b"], "params": {}, "semantics": {"child_signs": {"a": 1, "b": -1}}},
+    "ewm": {"children": ["x"], "params": {}, "semantics": {"horizon_params": ["halflife"]}},
+    "tscore": {"children": ["x"], "params": {}, "semantics": {}},
+    "rank": {"children": ["x"], "params": {}, "semantics": {}},
+    "xscore": {"children": ["x"], "params": {}, "semantics": {}},
+}}
+
+
+def _r(signal):
+    return {"schema": "example/recipe/1", "signal": signal}
+
+
+def test_semantic_family_groups_wrappers_of_the_same_idea():
+    from research.external.recipes import describe
+    leaf = {"op": "obs", "name": "ret"}
+    reversal = {"op": "neg", "x": {"op": "ewm", "halflife": 21, "x": leaf}}
+    variants = [reversal, {"op": "rank", "x": reversal}, {"op": "xscore", "x": reversal},
+                {"op": "tscore", "halflife": 252, "x": reversal}]  # normaliser: no horizon
+    families = {describe(_r(v), SEMANTIC_VOCAB).family for v in variants}
+    assert families == {"ret:-:1m"}
+    momentum = {"op": "xscore", "x": {"op": "ewm", "halflife": 264,
+                                      "x": {"op": "ewm", "halflife": 22, "x": leaf}}}
+    assert describe(_r(momentum), SEMANTIC_VOCAB).family == "ret:+:1y+"
+    spread = {"op": "sub", "a": {"op": "ewm", "halflife": 20, "x": leaf},
+              "b": {"op": "ewm", "halflife": 250, "x": leaf}}
+    assert describe(_r(spread), SEMANTIC_VOCAB).family == "ret:+:1m+ret:-:1y+"
+    # without published semantics: the structural fallback
+    assert describe(_r({"op": "rank", "x": reversal})).family == "rank:ret"
+
+
+def test_campaign_quota_uses_semantic_families(tmp_path, make_campaign):
+    import hashlib
+    from research.v3.campaign import _canonical
+    script = tmp_path / "fake.py"
+    script.write_text(FAKE)
+    spec = ExternalEvaluatorSpec(name="fake", version="1", code_hash=CODE_HASH,
+                                 command=(sys.executable, str(script)), cwd=str(tmp_path),
+                                 universe="u", base_bps=5.0, elevated_bps=10.0)
+    vhash = hashlib.sha256(_canonical(SEMANTIC_VOCAB)).hexdigest()
+    contract = PortfolioCampaignContract(campaign_id="sem", mission="m", evaluator=spec,
+                                         vocabulary_hash=vhash, discovery_budget=10)
+    with pytest.raises(ContractMismatch):
+        PortfolioCampaign(tmp_path / "bad", contract, vocabulary={"other": 1})
+    c = PortfolioCampaign(tmp_path / "sem", contract, vocabulary=SEMANTIC_VOCAB)
+    leaf = {"op": "obs", "name": "alpha"}
+    wrappers = ["rank", "xscore", "tscore"]
+    for i, wrap in enumerate(wrappers):
+        node = {"op": "neg", "x": {"op": "ewm", "halflife": 15 + 10 * i, "x": leaf}}
+        node = {"op": wrap, "x": node} if wrap != "tscore" else {"op": wrap, "halflife": 100, "x": node}
+        c.submit({"recipe": _r(node), "rationale": wrap})
+    reasons = [e["payload"]["reason"] for e in c.events() if e["type"] == "admission_rejected"]
+    assert reasons == ["family_quota"] and c.state()["trials"] == 2
