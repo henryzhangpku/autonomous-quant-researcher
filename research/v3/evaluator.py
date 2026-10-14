@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import math
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
 from typing import Iterable
@@ -107,6 +107,8 @@ class Evaluation:
     elevated: ScenarioMetrics
     by_year: dict[str, YearMetrics]
     ranking_score_pp: float
+    # Manifest hashes of the feature exports this evaluation read, by family.
+    feature_manifest_hashes: dict[str, str] = field(default_factory=dict)
 
 
 def bootstrap_seed(candidate_hash: str, stage_manifest_hash: str, price_source_id: str,

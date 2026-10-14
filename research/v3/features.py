@@ -21,12 +21,15 @@ FEATURE_SNAPSHOT_SCHEMA_VERSION = 1
 EXCHANGE_TIMEZONE = "America/New_York"
 EXCHANGE_CALENDAR = "XNYS"
 ET = ZoneInfo(EXCHANGE_TIMEZONE)
-FAMILIES = {"flow", "gex", "dark_pool"}
+FAMILIES = {"flow", "gex", "dark_pool", "portfolio_signal"}
 REDISTRIBUTION_CLASSES = {"private_derived_only", "private_internal_only"}
 FLOW_MAX_STALENESS_SECONDS = 15 * 60
 GEX_MAX_CAPTURE_LAG_SECONDS = 10 * 60
 GEX_MAX_STALENESS_SECONDS = 30 * 60
 DARK_POOL_MAX_STALENESS_SECONDS = 4 * 24 * 60 * 60
+# Daily scores from an external portfolio evaluator, as of a prior close.
+PORTFOLIO_SIGNAL_MAX_STALENESS_SECONDS = 4 * 24 * 60 * 60
+PORTFOLIO_SIGNAL_MAX_ABS_VALUE = 100.0
 COVERAGE_WEEK_FLOORS = {"discovery": 80, "validation": 40, "holdout": 20}
 SPLIT_DATES = {
     "discovery": (date(2016, 1, 1), date(2021, 12, 31)),
@@ -197,7 +200,40 @@ class DarkPoolRecord:
         _finite(self.premium, "dark-pool premium", nonnegative=True)
 
 
-SourceRecord = FlowRecord | GexRecord | DarkPoolRecord
+@dataclass(frozen=True)
+class PortfolioSignalRecord:
+    """One named daily score for one symbol, as of a session close.
+
+    ``event_time`` is the close the score is computed through; ``available_at``
+    is when the exporting program published it. A decision may read it only on
+    a later session (see ``_portfolio_signal_features``).
+    """
+    schema_version: int
+    family: str
+    event_key: str
+    symbol: str
+    event_time: str
+    snapshot_time: str
+    available_at: str
+    ingested_at: str
+    exchange_timezone: str
+    exchange_calendar: str
+    redistribution_class: str
+    source_contract_version: str
+    metric: str
+    value: float
+
+    def validate(self) -> None:
+        _validate_common(self, time_field="event_time")
+        if self.family != "portfolio_signal":
+            raise FeatureContractError("portfolio-signal record family is invalid")
+        if not self.metric or not all(c.islower() or c.isdigit() or c == "_" for c in self.metric):
+            raise FeatureContractError("portfolio-signal metric must be snake_case")
+        if abs(_finite(self.value, "portfolio-signal value")) > PORTFOLIO_SIGNAL_MAX_ABS_VALUE:
+            raise FeatureContractError("portfolio-signal value is out of range")
+
+
+SourceRecord = FlowRecord | GexRecord | DarkPoolRecord | PortfolioSignalRecord
 
 
 @dataclass(frozen=True)
@@ -225,6 +261,7 @@ class ObservationWindow:
             "flow": {"event_window"},
             "gex": {"snapshot"},
             "dark_pool": {"closed_aggregation", "forward_snapshot"},
+            "portfolio_signal": {"daily_close"},
         }
         if self.observation_kind not in allowed[self.family]:
             raise FeatureContractError("observation kind does not match its family")
@@ -312,7 +349,8 @@ class FeatureExport:
 
     @classmethod
     def from_jsonl(cls, manifest: FeatureManifest, payload: str) -> "FeatureExport":
-        record_type = {"flow": FlowRecord, "gex": GexRecord, "dark_pool": DarkPoolRecord}
+        record_type = {"flow": FlowRecord, "gex": GexRecord, "dark_pool": DarkPoolRecord,
+                       "portfolio_signal": PortfolioSignalRecord}
         records: list[SourceRecord] = []
         windows: list[ObservationWindow] = []
         try:
@@ -380,13 +418,21 @@ class FeatureExport:
                     and _timestamp(record.snapshot_time, "snapshot_time") == observed
                     for record in self.records
                 )
-            else:
+            elif window.family == "dark_pool":
                 matching = any(
                     isinstance(record, DarkPoolRecord) and record.symbol == window.symbol
                     and record.aggregation_kind == window.observation_kind
                     and _timestamp(record.event_time, "event_time") == observed
                     for record in self.records
                 )
+            elif window.family == "portfolio_signal":
+                matching = any(
+                    isinstance(record, PortfolioSignalRecord) and record.symbol == window.symbol
+                    and _timestamp(record.event_time, "event_time") == observed
+                    for record in self.records
+                )
+            else:
+                raise FeatureContractError(f"no zero-event rule for family {window.family}")
             if matching:
                 raise FeatureContractError(
                     "zero-event observation window contradicts matching source rows"
@@ -642,6 +688,39 @@ def _dark_pool_features(export: FeatureExport, symbol: str, decision: datetime,
     )
 
 
+def _portfolio_signal_features(export: FeatureExport, symbol: str,
+                               decision: datetime) -> DerivedFamily:
+    """The latest daily scores from a session strictly before the decision day."""
+    decision_day = decision.astimezone(ET).date()
+    windows = [
+        window for window in _window_candidates(export, symbol, decision, {"daily_close"},
+                                                same_day=False)
+        if _timestamp(window.observation_time, "observation_time").astimezone(ET).date()
+        < decision_day
+    ]
+    if not windows:
+        return _uncovered("portfolio_signal", export)
+    window = max(windows, key=lambda item: _timestamp(item.observation_time, "observation_time"))
+    as_of = _timestamp(window.observation_time, "observation_time")
+    staleness = (decision - as_of).total_seconds()
+    if staleness < 0 or staleness > PORTFOLIO_SIGNAL_MAX_STALENESS_SECONDS:
+        return _uncovered("portfolio_signal", export)
+    metrics = {
+        item.metric: float(item.value) for item in export.records
+        if isinstance(item, PortfolioSignalRecord) and item.symbol == symbol
+        and _timestamp(item.event_time, "event_time") == as_of
+        and _timestamp(item.available_at, "available_at") <= decision
+        and _timestamp(item.ingested_at, "ingested_at") <= decision
+    }
+    if not metrics:
+        return _uncovered("portfolio_signal", export)
+    metrics["staleness_seconds"] = staleness
+    return DerivedFamily(
+        "portfolio_signal", True, as_of.isoformat(), staleness, tuple(sorted(metrics.items())),
+        export.manifest.source_hash, export.manifest.manifest_hash,
+    )
+
+
 def derive_feature_snapshot(
     exports: Mapping[str, FeatureExport],
     *,
@@ -671,8 +750,12 @@ def derive_feature_snapshot(
             derived.append(_flow_features(export, symbol, decision))
         elif family == "gex":
             derived.append(_gex_features(export, symbol, decision))
-        else:
+        elif family == "dark_pool":
             derived.append(_dark_pool_features(export, symbol, decision, spot))
+        elif family == "portfolio_signal":
+            derived.append(_portfolio_signal_features(export, symbol, decision))
+        else:
+            raise FeatureContractError(f"no derivation for family {family}")
     return FeatureSnapshot.create(symbol, decision.isoformat(), derived)
 
 
