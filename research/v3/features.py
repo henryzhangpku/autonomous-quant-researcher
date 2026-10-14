@@ -773,6 +773,19 @@ def _portfolio_signal_features(export: FeatureExport, symbol: str,
     )
 
 
+# id(export) -> export; an export is immutable, so one validation stands for its lifetime.
+_VALIDATED: dict[int, FeatureExport] = {}
+
+
+def _validate_once(export: FeatureExport) -> None:
+    if _VALIDATED.get(id(export)) is export:
+        return
+    export.validate()
+    if len(_VALIDATED) >= 16:
+        _VALIDATED.clear()
+    _VALIDATED[id(export)] = export
+
+
 def derive_feature_snapshot(
     exports: Mapping[str, FeatureExport],
     *,
@@ -795,7 +808,7 @@ def derive_feature_snapshot(
         if export is None:
             derived.append(_uncovered(family, None))
             continue
-        export.validate()
+        _validate_once(export)
         if export.manifest.family != family:
             raise FeatureContractError("export key does not match its family")
         if family == "flow":
