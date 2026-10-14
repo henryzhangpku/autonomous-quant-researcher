@@ -38,14 +38,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from research.backtest.data import SessionStore  # noqa: E402
-from research.v3.campaign import CampaignContract, CampaignCoordinator  # noqa: E402
+from research.v3.campaign import (CampaignContract, CampaignCoordinator,  # noqa: E402
+                                  _candidate_record, _evaluation_record)
+from research.v3.evaluator import EVALUATOR_VERSION, Stage  # noqa: E402
 from research.v3.features import (ET, SPLIT_DATES, FeatureExport, FeatureManifest,  # noqa: E402
                                   coverage_report, derive_feature_snapshot, parse_feature_key,
                                   required_family_coverage_hash)
 from research.v3.runtime import CampaignRuntime, ModeledResearchEvaluator  # noqa: E402
 from research.v3.stage_store import StageAccess, materialize_stage_stores  # noqa: E402
 
-EVALUATOR_VERSION = "modeled-v3"
 DECISION_MINUTE = 600  # coverage is measured at 10:00 ET; a daily feature is constant intraday
 
 MISSION = """Discover a robust SPY same-day options hypothesis that conditions an intraday
@@ -67,6 +68,18 @@ def load_export(path: Path) -> FeatureExport:
     return export
 
 
+def stage_manifests(stages: Path, sessions, source_hash: str):
+    """Materialize the stage stores once; a re-run reuses them only if they were
+    built from the same tape."""
+    if not (stages / "discovery").exists():
+        return materialize_stage_stores(stages, sessions, source_hash=source_hash)
+    manifests = {stage: StageAccess(stages, stage).manifest()
+                 for stage in ("discovery", "validation", "holdout")}
+    if any(m.source_hash != source_hash for m in manifests.values()):
+        raise SystemExit(f"{stages} was built from a different tape; use a new --dir")
+    return manifests
+
+
 def coverage(exports: dict[str, FeatureExport], keys: list[str], sessions, symbol: str):
     reports = []
     for split, (start, end) in SPLIT_DATES.items():
@@ -83,6 +96,27 @@ def coverage(exports: dict[str, FeatureExport], keys: list[str], sessions, symbo
             family, metric = parse_feature_key(key)
             reports.append(coverage_report(family, split, snapshots, metric=metric))
     return reports
+
+
+def preflight(contract: CampaignContract, exports, stages: Path, key: str) -> None:
+    """Run a hypothesis that can never select a session through the evaluator
+    and the contract's own evaluation check, outside the ledger: a harness
+    mismatch (version, manifests, feature pins) fails here instead of costing
+    real trials. It selects nothing, so it reveals no stage economics."""
+    family, metric = parse_feature_key(key)
+    never = {"schema_version": 3, "entry_minute": 600,
+             "signal": {"op": "lt", "observation": {"obs": "feature", "family": family,
+                                                     "metric": metric}, "value": -100},
+             "structure": {"helper": "call_debit_spread", "width": 2.0, "otm_offset": 0.0}}
+    from research.v3.campaign import FrozenCandidate
+    candidate = FrozenCandidate(**_candidate_record(never, _sha("preflight"), contract))
+    evaluation = ModeledResearchEvaluator(features=exports).evaluate(
+        candidate, StageAccess(stages, "discovery"), Stage.DISCOVERY)
+    try:  # raises on any mismatch between what the evaluator reports and the contract
+        _evaluation_record(evaluation, Stage.DISCOVERY, contract)
+    except Exception as exc:
+        raise SystemExit(f"preflight failed: {type(exc).__name__}: {exc}") from exc
+    print("preflight ok", file=sys.stderr)
 
 
 def main() -> int:
@@ -110,7 +144,7 @@ def main() -> int:
     sessions = SessionStore.load(args.symbol).sessions()
     canonical = json.dumps([[s.day, list(map(list, s.bars))] for s in sessions],
                            separators=(",", ":"))
-    manifests = materialize_stage_stores(root / "stages", sessions, source_hash=_sha(canonical))
+    manifests = stage_manifests(root / "stages", sessions, _sha(canonical))
     reports = coverage(exports, keys, sessions, args.symbol)
     for r in reports:
         print(f"coverage {r.key:32} {r.split:10} {r.state.value:22} "
@@ -134,6 +168,7 @@ def main() -> int:
         family_quota=args.family_quota,
         feature_manifest_hashes={f: e.manifest.manifest_hash for f, e in exports.items()},
     )
+    preflight(contract, exports, root / "stages", keys[0])
     coordinator = CampaignCoordinator(root / "campaign", contract,
                                       lambda stage: StageAccess(root / "stages", stage))
     from research.v3.proposer import OpenAICompatibleDeclarativeProposer

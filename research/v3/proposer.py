@@ -503,12 +503,13 @@ def build_prompt(*, mission: str, previous_attempts: Sequence[Mapping[str, Any]]
     )
     diversity = json.dumps(list(diversity_feedback)[-20:], sort_keys=True, allow_nan=False)
     return f"""Mission:\n{mission.strip()}\n\nReturn JSON only: {{"hypothesis": <object>, "rationale": <string>}}.
-The hypothesis is data, never Python or executable text. It must contain exactly:
+The hypothesis is data, never Python or executable text. It has exactly four keys,
+schema_version, entry_minute, signal and structure, and nothing else:
 - schema_version: 3
 - entry_minute: a 5-minute-grid integer 570..955 (America/New_York)
-- signal: Boolean expression using op and/or/not, comparisons lt/lte/gt/gte, or observed
-- observations: return_from_open(minute), return_between(start_minute,end_minute),
-  first_touch_before_entry(after_minute,open_offset)
+- signal: Boolean expression using op and/or/not, comparisons lt/lte/gt/gte, or observed.
+  Observations appear only inside signal (never as their own key): return_from_open(minute),
+  return_between(start_minute,end_minute), first_touch_before_entry(after_minute,open_offset)
 - structure: helper call_debit_spread or put_credit_spread, width > 0 and <= 20,
   otm_offset between -20 and 20
 Every declared observation minute must be on the same 5-minute grid. A first touch must occur
