@@ -52,8 +52,9 @@ def build_prompt(*, mission: str, vocabulary: Mapping[str, Any],
                  attempts: Sequence[Mapping[str, Any]] = (),
                  rejections: Sequence[Mapping[str, Any]] = (), max_attempts_shown: int = 30) -> str:
     shown = list(attempts)[-max_attempts_shown:]
-    operators = "\n".join("  " + _signature(name, spec)
-                           for name, spec in sorted(vocabulary.get("operators", {}).items()))
+    operators = "\n".join(
+        "  " + _signature(name, spec) + (f"  -- {spec['description']}" if spec.get("description") else "")
+        for name, spec in sorted(vocabulary.get("operators", {}).items()))
     observations = "\n".join(f"  {name}: {text}"
                               for name, text in sorted(vocabulary.get("observations", {}).items()))
     examples = "\n".join("  " + json.dumps({"recipe": ex, "rationale": "<one sentence>"})

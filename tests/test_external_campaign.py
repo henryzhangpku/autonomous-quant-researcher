@@ -246,6 +246,17 @@ def test_semantic_family_groups_wrappers_of_the_same_idea():
     assert describe(_r(spread), SEMANTIC_VOCAB).family == "ret:+:1m+ret:-:1y+"
     # without published semantics: the structural fallback
     assert describe(_r({"op": "rank", "x": reversal})).family == "rank:ret"
+    # an integrated input shares its base's family; its undifferenced level is long-horizon
+    vocab = {**SEMANTIC_VOCAB, "observation_semantics": {"logprice": {"integrates": "ret"}},
+             "operators": {**SEMANTIC_VOCAB["operators"],
+                           "diff": {"children": ["x"], "params": {},
+                                    "semantics": {"horizon_params": ["periods"], "differences": True}},
+                           "rolling_sum": {"children": ["x"], "params": {},
+                                           "semantics": {"horizon_params": ["window"]}}}}
+    lp = {"op": "obs", "name": "logprice"}
+    assert describe(_r({"op": "diff", "periods": 126, "x": lp}), vocab).family == \
+        describe(_r({"op": "rolling_sum", "window": 126, "x": leaf}), vocab).family == "ret:+:3-6m"
+    assert describe(_r({"op": "xscore", "x": lp}), vocab).family == "ret:+:1y+"
 
 
 def test_campaign_quota_uses_semantic_families(tmp_path, make_campaign):
