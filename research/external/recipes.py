@@ -9,9 +9,13 @@ whose string fields are identities (such as an observation name).
 * exact duplicates share a canonical hash;
 * a near duplicate has the same tree, operators and identities as an admitted
   recipe and differs in exactly one number by less than 25% (one knob turned);
-* a recipe's family is its top-level operator plus the set of identities it
-  reads (``neg:ret`` and ``xscore:ret`` are different ideas on the same
-  input); a campaign admits at most ``quota`` recipes per family.
+* a recipe's family is *what it does*. When the frozen vocabulary publishes
+  operator semantics (sign flips, child signs, lookback parameters), the
+  family is the set of input paths, each as input, net sign and lookback
+  bucket: ``neg(ewm21(ret))`` and ``rank(neg(ewm21(ret)))`` are both
+  ``ret:-:1m``. Without semantics it falls back to the top-level operator
+  plus the identities read. A campaign admits at most ``quota`` recipes per
+  family.
 """
 
 from __future__ import annotations
@@ -26,6 +30,8 @@ MAX_JSON_BYTES = 8_192
 MAX_DEPTH = 8
 MAX_NODES = 32
 NEAR_DUPLICATE_RADIUS = 0.25
+# Lookback buckets in trading days: (upper bound, label)
+HORIZON_BUCKETS = ((10, "1w"), (42, "1m"), (130, "3-6m"), (math.inf, "1y+"))
 
 
 class RecipeShapeError(ValueError):
@@ -36,7 +42,7 @@ class RecipeShapeError(ValueError):
 class RecipeDescriptor:
     semantic_hash: str
     structure_hash: str           # tree with every number blanked
-    family: str                   # root op + sorted identities, e.g. "xscore:carry+ret"
+    family: str                   # e.g. "ret:-:1m" (semantic) or "xscore:ret" (fallback)
     numbers: tuple[float, ...]    # parameters in canonical traversal order
 
 
@@ -79,7 +85,38 @@ def _walk(node: Any, depth: int, count: list[int], numbers: list[float],
     return blank
 
 
-def describe(document: Mapping[str, Any]) -> RecipeDescriptor:
+def _bucket(days: float) -> str:
+    return next(label for bound, label in HORIZON_BUCKETS if days <= bound)
+
+
+def _paths(node: Mapping[str, Any], operators: Mapping[str, Any], sign: int,
+           horizon: float, out: set[str]) -> None:
+    semantics = (operators.get(node["op"]) or {}).get("semantics") or {}
+    sign *= int(semantics.get("sign", 1))
+    horizon += sum(float(node[p]) for p in semantics.get("horizon_params", [])
+                   if isinstance(node.get(p), (int, float)) and not isinstance(node.get(p), bool))
+    children = [(k, v) for k, v in node.items() if isinstance(v, dict)]
+    if not children:
+        identities = sorted(v for k, v in node.items() if k != "op" and isinstance(v, str))
+        for name in identities or [node["op"]]:
+            out.add(f"{name}:{'+' if sign > 0 else '-'}:{_bucket(horizon)}")
+        return
+    child_signs = semantics.get("child_signs", {})
+    for key, child in children:
+        _paths(child, operators, sign * int(child_signs.get(key, 1)), horizon, out)
+
+
+def semantic_family(document: Mapping[str, Any], vocabulary: Mapping[str, Any]) -> str | None:
+    operators = vocabulary.get("operators") or {}
+    if not any((spec or {}).get("semantics") for spec in operators.values()):
+        return None
+    paths: set[str] = set()
+    _paths(document["signal"], operators, 1, 0.0, paths)
+    return "+".join(sorted(paths))
+
+
+def describe(document: Mapping[str, Any],
+             vocabulary: Mapping[str, Any] | None = None) -> RecipeDescriptor:
     if not isinstance(document, dict) or set(document) != {"schema", "signal"}:
         raise RecipeShapeError("a recipe has exactly 'schema' and 'signal'")
     if not isinstance(document["schema"], str):
@@ -92,7 +129,8 @@ def describe(document: Mapping[str, Any]) -> RecipeDescriptor:
     blank = _walk(document["signal"], 1, [0], numbers, identities)
     structure = hashlib.sha256(
         canonical_json({"schema": document["schema"], "signal": blank}).encode()).hexdigest()
-    family = document["signal"]["op"] + ":" + ("+".join(sorted(identities)) or "none")
+    family = (semantic_family(document, vocabulary) if vocabulary else None) or \
+        document["signal"]["op"] + ":" + ("+".join(sorted(identities)) or "none")
     return RecipeDescriptor(semantic_hash(document), structure, family, tuple(numbers))
 
 
