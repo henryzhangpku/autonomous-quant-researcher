@@ -186,3 +186,30 @@ def test_cli_init_and_scripted_run(tmp_path):
 def test_proposals_are_strict(text):
     with pytest.raises(ProposalError):
         parse_proposal(text)
+
+
+def test_prompt_examples_are_valid_and_rejections_are_fed_back(make_campaign):
+    from research.external.proposer import _examples, build_prompt
+    from research.external.recipes import describe
+    vocabulary = {"schema": "example/recipe/1", "max_depth": 6, "max_nodes": 16,
+                  "observations": {"ret": "daily return"},
+                  "operators": {"obs": {"children": [], "params": {"name": {"type": "str", "min": None,
+                                                                         "max": None, "choices": ["ret"]}}},
+                                "ewm": {"children": ["x"], "params": {"halflife": {"type": "int", "min": 1, "max": 520}}},
+                                "xscore": {"children": ["x"], "params": {}},
+                                "neg": {"children": ["x"], "params": {}},
+                                "rank": {"children": ["x"], "params": {}},
+                                "rolling_sum": {"children": ["x"], "params": {"window": {"type": "int", "min": 1, "max": 520}}}}}
+    for example in _examples(vocabulary):
+        describe(example)  # shape-valid
+    c = make_campaign()
+    c.submit({"recipe": {"schema": "example/recipe/1", "signal": "ret"},
+              "rationale": "bare string input"})
+    c.submit(proposal("bad"))  # shape-valid, refused by the evaluator's vocabulary
+    feedback = c.rejection_feedback()
+    assert [f["kind"] for f in feedback] == ["formulation", "vocabulary"]
+    assert '"signal": "ret"' in feedback[0]["excerpt"]
+    assert feedback[1]["reason"] == "unknown observation"
+    prompt = build_prompt(mission="m", vocabulary=vocabulary, rejections=feedback)
+    assert "ewm(x: node, halflife: int 1..520)" in prompt
+    assert "never a bare string" in prompt and "bare string input" in prompt
