@@ -17,6 +17,8 @@ from enum import StrEnum
 from typing import Any, Iterable, Mapping
 from zoneinfo import ZoneInfo
 
+from research.v3.program import PROGRAMS, SPY_PRICE_V3, Program
+
 FEATURE_EXPORT_SCHEMA_VERSION = 1
 FEATURE_SNAPSHOT_SCHEMA_VERSION = 1
 EXCHANGE_TIMEZONE = "America/New_York"
@@ -31,12 +33,9 @@ DARK_POOL_MAX_STALENESS_SECONDS = 4 * 24 * 60 * 60
 # Daily scores from an external portfolio evaluator, as of a prior close.
 PORTFOLIO_SIGNAL_MAX_STALENESS_SECONDS = 4 * 24 * 60 * 60
 PORTFOLIO_SIGNAL_MAX_ABS_VALUE = 100.0
-COVERAGE_WEEK_FLOORS = {"discovery": 80, "validation": 40, "holdout": 20}
-SPLIT_DATES = {
-    "discovery": (date(2016, 1, 1), date(2021, 12, 31)),
-    "validation": (date(2022, 1, 1), date(2024, 12, 31)),
-    "holdout": (date(2025, 1, 1), None),
-}
+# The original program's coverage schedule; other programs carry their own.
+COVERAGE_WEEK_FLOORS = dict(SPY_PRICE_V3.coverage_week_floors)
+SPLIT_DATES = {stage: SPY_PRICE_V3.split_dates(stage) for stage in SPY_PRICE_V3.stage_dates}
 
 
 class FeatureContractError(ValueError):
@@ -838,19 +837,22 @@ class CoverageReport:
     # "" covers the family as a whole; a metric name covers only that metric,
     # so a requirement on a short-history metric cannot ride on its family.
     metric: str = ""
+    program_id: str = SPY_PRICE_V3.program_id
 
     @property
     def key(self) -> str:
         return f"{self.family}.{self.metric}" if self.metric else self.family
 
     def validate(self) -> None:
-        if self.family not in FAMILIES or self.split not in COVERAGE_WEEK_FLOORS:
-            raise FeatureContractError("unknown coverage family or split")
+        program = PROGRAMS.get(self.program_id)
+        if (program is None or self.family not in FAMILIES
+                or self.split not in program.coverage_week_floors):
+            raise FeatureContractError("unknown coverage family, split or program")
         if self.metric and not _is_metric_name(self.metric):
             raise FeatureContractError("coverage metric must be snake_case")
         if (self.eligible_sessions < 0 or not 0 <= self.covered_sessions <= self.eligible_sessions
                 or self.covered_iso_weeks < 0
-                or self.required_iso_weeks != COVERAGE_WEEK_FLOORS[self.split]):
+                or self.required_iso_weeks != program.coverage_week_floors[self.split]):
             raise FeatureContractError("coverage counts are inconsistent")
         expected_ratio = self.covered_sessions / self.eligible_sessions if self.eligible_sessions else 0.0
         if abs(self.coverage_ratio - expected_ratio) > 1e-12:
@@ -872,13 +874,14 @@ def coverage_report(
     *,
     source_available: bool = True,
     metric: str = "",
+    program: Program = SPY_PRICE_V3,
 ) -> CoverageReport:
     """Coverage of one family, or of one metric of it when `metric` is set:
     a session counts only if that metric has a value."""
-    if family not in FAMILIES or split not in COVERAGE_WEEK_FLOORS:
+    if family not in FAMILIES or split not in program.coverage_week_floors:
         raise FeatureContractError("unknown coverage family or split")
     values = tuple(snapshots)
-    split_start, split_end = SPLIT_DATES[split]
+    split_start, split_end = program.split_dates(split)
     for snapshot in values:
         snapshot.validate()
         day = _timestamp(snapshot.decision_time, "decision_time").astimezone(ET).date()
@@ -892,7 +895,7 @@ def coverage_report(
         _timestamp(snapshot.decision_time, "decision_time").astimezone(ET).date().isocalendar()[:2]
         for snapshot in covered
     })
-    floor = COVERAGE_WEEK_FLOORS[split]
+    floor = program.coverage_week_floors[split]
     if not source_available:
         state = CoverageState.UNAVAILABLE
     elif ratio < .90 or weeks < floor:
@@ -901,7 +904,7 @@ def coverage_report(
         state = CoverageState.READY
     report = CoverageReport(
         family, split, state, len(values), len(covered), ratio, weeks, floor, source_available,
-        metric,
+        metric, program.program_id,
     )
     report.validate()
     return report
@@ -941,5 +944,7 @@ def required_family_coverage_hash(reports: Iterable[CoverageReport]) -> str:
         item = asdict(report)
         if not item["metric"]:
             item.pop("metric")  # family-level reports hash exactly as before
+        if item["program_id"] == SPY_PRICE_V3.program_id:
+            item.pop("program_id")  # as do reports under the original program
         payload.append(item)
     return _hash(payload)

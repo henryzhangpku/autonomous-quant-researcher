@@ -11,6 +11,7 @@ from enum import StrEnum
 from typing import Iterable
 
 from research.v3.ledger import GrossTradeLedger, GrossTradeRow
+from research.v3.program import SPY_PRICE_V3, Program
 
 EVALUATOR_VERSION = "spy-options-staged-v3.2"
 BASE_COST_FRACTION = 0.03
@@ -228,6 +229,7 @@ def evaluate_ledger(
     shortlist_size: int = 1,
     control_ledger: GrossTradeLedger | None = None,
     floors: dict[Stage, StageFloor] | None = None,
+    program: Program = SPY_PRICE_V3,
 ) -> Evaluation:
     """Evaluate once from the canonical gross ledger; provider callbacks are impossible."""
     failures: list[str] = []
@@ -244,7 +246,11 @@ def evaluate_ledger(
         raise ValueError("price_source_id is incompatible with price_source_kind")
     if not _is_sha256(stage_manifest_hash):
         raise ValueError("stage_manifest_hash must be a SHA-256 hash")
-    floor = (floors or STAGE_FLOORS)[stage]
+    if floors is None:
+        floors = {Stage(name): StageFloor(f.raw_trades, f.effective_weeks,
+                                          f.per_period_trades, f.per_period_weeks)
+                  for name, f in program.floors.items()}
+    floor = floors[stage]
     alpha = 0.05 / shortlist_size if stage == Stage.VALIDATION else 0.05
     if shortlist_size < 1 or (stage == Stage.VALIDATION and shortlist_size > 3):
         raise ValueError("shortlist_size must be between one and three")
@@ -253,8 +259,11 @@ def evaluate_ledger(
     control_counts = _ledger_counts(control_ledger.rows) if control_ledger is not None else None
     if any(row.price_source != source_kind.value for row in ledger.rows if row.selected):
         failures.append("selected signal rows do not match price_source_kind")
-    if ledger.selected_count != len(rows):
-        failures.append("selected rows are missing required prices")
+    if program.min_price_coverage >= 1:
+        if ledger.selected_count != len(rows):
+            failures.append("selected rows are missing required prices")
+    elif ledger.selected_count and len(rows) / ledger.selected_count < program.min_price_coverage:
+        failures.append(f"fewer than {program.min_price_coverage:.0%} of selected sessions are priced")
     weeks = len({_iso_week(row.date) for row in rows})
     if len(rows) < floor.raw_trades:
         failures.append(f"requires at least {floor.raw_trades} priced trades")
@@ -359,17 +368,27 @@ def evaluate_ledger(
             failures.append("elevated-cost net mean P&L is not positive")
 
     if stage == Stage.VALIDATION:
-        expected_years = {"2022", "2023", "2024"}
-        if set(by_year) != expected_years:
-            failures.append("validation must contain evidence for 2022, 2023, and 2024")
-        for year in sorted(expected_years):
-            item = by_year.get(year)
-            if item is None:
+        labels = [label for label, _, _ in program.validation_periods]
+        periods: dict[str, list[GrossTradeRow]] = {}
+        for row in rows:
+            label = program.period_of(row.date)
+            if label is not None:
+                periods.setdefault(label, []).append(row)
+        if set(periods) != set(labels):
+            listed = labels[0] if len(labels) == 1 else (
+                " and ".join(labels) if len(labels) == 2
+                else ", ".join(labels[:-1]) + ", and " + labels[-1])
+            failures.append(f"validation must contain evidence for {listed}")
+        for label in labels:
+            period_rows = periods.get(label)
+            if not period_rows:
                 continue
-            if item.trades < floor.per_year_trades or item.effective_weeks < floor.per_year_weeks:
-                failures.append(f"{year} does not meet validation sample floors")
-            if item.base.mean_pnl_pct < 0:
-                failures.append(f"{year} base-cost net mean P&L is negative")
+            period_weeks = len({_iso_week(row.date) for row in period_rows})
+            if len(period_rows) < floor.per_year_trades or period_weeks < floor.per_year_weeks:
+                failures.append(f"{label} does not meet validation sample floors")
+            mean = sum(v for _, v in _costed_outcomes(period_rows, BASE_COST_FRACTION))
+            if mean / len(period_rows) * 100.0 < 0:
+                failures.append(f"{label} base-cost net mean P&L is negative")
 
     worst_year = min((item.base.mean_pnl_pct for item in by_year.values()), default=float("nan"))
     ranking_components = [absolute_edge, base.lower_bound_pct, elevated.mean_pnl_pct]
@@ -386,7 +405,7 @@ def evaluate_ledger(
         bootstrap_seed=seed,
         price_source_id=price_source_id,
         price_source_kind=source_kind,
-        evaluator_version=EVALUATOR_VERSION,
+        evaluator_version=program.evaluator_version,
         stage_manifest_hash=stage_manifest_hash,
         signal=signal_counts,
         control=control_counts,

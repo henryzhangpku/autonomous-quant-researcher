@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from research.v3.evaluator import Evaluation, Stage
+from research.v3.program import Program, program_for_scope
 from research.v3.features import FAMILIES as FEATURE_FAMILIES
 from research.v3.features import FeatureContractError, parse_feature_key
 from research.v3.hypothesis import (
@@ -128,6 +129,10 @@ class CampaignContract:
     # Feature exports a hypothesis may read, pinned by manifest hash per family.
     feature_manifest_hashes: Mapping[str, str] = field(default_factory=dict)
 
+    @property
+    def program(self) -> Program:
+        return program_for_scope(self.research_scope)
+
     def validate(self) -> None:
         if not self.campaign_id or not self.evaluator_version:
             raise ValueError("campaign and evaluator identifiers are required")
@@ -137,8 +142,7 @@ class CampaignContract:
             raise ValueError("mission_hash must be a SHA-256 hash")
         if not _is_hash(self.required_family_coverage_hash):
             raise ValueError("required_family_coverage_hash must be a SHA-256 hash")
-        if dict(self.research_scope) != CANONICAL_RESEARCH_SCOPE:
-            raise ValueError("research_scope must be the canonical spy-price-v3 scope")
+        program_for_scope(self.research_scope)  # a registered program's canonical scope
         if (not _is_hash(self.research_scope_hash)
                 or self.research_scope_hash != _sha256(self.research_scope)):
             raise ValueError("research_scope_hash must bind the canonical research scope")

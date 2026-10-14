@@ -643,7 +643,7 @@ def test_campaign_contract_hash_binds_canonical_research_scope() -> None:
         "program_id": "spy-price-v3", "symbol": "SPY", "feature_families": [],
     }
     assert len(frozen.research_scope_hash) == 64
-    with pytest.raises(ValueError, match="canonical spy-price-v3 scope"):
+    with pytest.raises(ValueError, match="canonical scope of a registered program"):
         replace(frozen, research_scope={
             "program_id": "palantir", "symbol": "PLTR", "feature_families": [],
         }).validate()

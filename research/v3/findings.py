@@ -26,6 +26,7 @@ from research.v3.evaluator import (
     Stage,
     bootstrap_seed,
 )
+from research.v3.program import SPY_PRICE_V3
 from research.v3.features import (
     CoverageReport,
     CoverageState,
@@ -256,6 +257,8 @@ def _coverage_blocks(required_families: tuple[str, ...],
         record = _jsonable(report)
         if not record["metric"]:
             record.pop("metric")  # family-level evidence keeps its original shape
+        if record["program_id"] == SPY_PRICE_V3.program_id:
+            record.pop("program_id")
         records.append(record)
     return records, ready
 
@@ -615,6 +618,7 @@ def validate_portable_finding(payload: Mapping[str, Any]) -> None:
                 required_iso_weeks=item["required_iso_weeks"],
                 source_available=item["source_available"],
                 metric=item.get("metric", ""),
+                program_id=item.get("program_id", SPY_PRICE_V3.program_id),
             )
             report.validate()
             typed_reports.append(report)
