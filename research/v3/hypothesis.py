@@ -120,6 +120,24 @@ def _validate_observation(node: Mapping[str, Any], entry: int) -> None:
         raise HypothesisError(f"unexpected fields for {obs}")
 
 
+def feature_reads(hypothesis: Hypothesis | Mapping[str, Any]) -> set[tuple[str, str]]:
+    """(family, metric) pairs the hypothesis's signal reads."""
+    signal = hypothesis.signal if isinstance(hypothesis, Hypothesis) else hypothesis["signal"]
+    found: set[tuple[str, str]] = set()
+
+    def walk(node: Any) -> None:
+        if not isinstance(node, Mapping):
+            return
+        observation = node.get("observation")
+        if isinstance(observation, Mapping) and observation.get("obs") == "feature":
+            found.add((str(observation["family"]), str(observation["metric"])))
+        for child in [*(node.get("args") or []), node.get("arg")]:
+            walk(child)
+
+    walk(signal)
+    return found
+
+
 def _reads_feature(node: Any) -> bool:
     if not isinstance(node, Mapping):
         return False
