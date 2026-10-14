@@ -9,7 +9,7 @@ import json
 import math
 import os
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import date, datetime, time
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping
 from zoneinfo import ZoneInfo
@@ -34,6 +34,7 @@ from research.v3.stage_store import StageAccess, StageManifest, materialize_stag
 
 ET = ZoneInfo("America/New_York")
 MODELED_PRICE_SOURCE_ID = "modeled:prior-day-rv-black-scholes-v1"
+from research.v3.features import ET, FeatureExport, derive_feature_snapshot
 
 
 @dataclass(frozen=True)
@@ -94,12 +95,28 @@ def _payoff_bounds(structure: Any) -> tuple[float, float]:
     return min(values), max(values)
 
 
+def _feature_families(node: Mapping[str, Any]) -> set[str]:
+    observation = node.get("observation")
+    found = {observation["family"]} if isinstance(observation, Mapping) \
+        and observation.get("obs") == "feature" else set()
+    for child in [*(node.get("args") or []), node.get("arg")]:
+        if isinstance(child, Mapping):
+            found |= _feature_families(child)
+    return found
+
+
 def build_modeled_ledgers(candidate: FrozenCandidate, access: StageAccess,
-                          *, vrp_multiple: float = 1.10
+                          *, vrp_multiple: float = 1.10,
+                          features: Mapping[str, FeatureExport] | None = None,
+                          symbol: str = "SPY",
                           ) -> tuple[GrossTradeLedger, GrossTradeLedger]:
     """Interpret a frozen hypothesis over one capability and retain denominators."""
     candidate.validate()
     hypothesis = parse_hypothesis(json.loads(candidate.canonical_document))
+    families = _feature_families(hypothesis.signal)
+    missing = families - set(features or {})
+    if missing:
+        raise ValueError(f"hypothesis reads feature families with no export: {sorted(missing)}")
     sessions = list(access.open_sessions())
     vol = realized_vol(sessions)
     signal_rows: list[GrossTradeRow] = []
@@ -113,7 +130,18 @@ def build_modeled_ledgers(candidate: FrozenCandidate, access: StageAccess,
         entry_price = session.price_at(hypothesis.entry_minute)
         if entry_price is None:
             continue
-        view = CandidateSessionView.at(session, hypothesis.entry_minute)
+        snapshot = None
+        if families:
+            decision = datetime.combine(
+                date.fromisoformat(session.day),
+                time(hypothesis.entry_minute // 60, hypothesis.entry_minute % 60), tzinfo=ET,
+            )
+            snapshot = derive_feature_snapshot(
+                {family: features[family] for family in families}, symbol=symbol,
+                decision_time=decision.isoformat(), spot=entry_price,
+                required_families=families,
+            )
+        view = CandidateSessionView.at(session, hypothesis.entry_minute, snapshot)
         selected = interpret_signal(hypothesis, view)
         structure = make_structure(hypothesis, entry_price)
         remaining = max(1, 960 - hypothesis.entry_minute) / (252.0 * 390.0)
@@ -161,8 +189,9 @@ class ModeledResearchEvaluator:
     """Pure scoring facade; an injected evaluator is trusted test infrastructure."""
 
     def __init__(self, override: Callable[[FrozenCandidate, StageAccess, Stage, int], Evaluation]
-                 | None = None):
+                 | None = None, features: Mapping[str, FeatureExport] | None = None):
         self._override = override
+        self._features = dict(features or {})
 
     def evaluate(self, candidate: FrozenCandidate, access: StageAccess, stage: Stage,
                  shortlist_size: int = 1) -> Evaluation:
@@ -171,14 +200,17 @@ class ModeledResearchEvaluator:
             raise PermissionError("stage capability does not match requested evaluation")
         if self._override is not None:
             return self._override(candidate, access, stage, shortlist_size)
-        signal, control = build_modeled_ledgers(candidate, access)
-        return evaluate_ledger(
+        signal, control = build_modeled_ledgers(candidate, access, features=self._features)
+        evaluation = evaluate_ledger(
             signal, stage=stage, candidate_hash=candidate.semantic_hash,
             stage_manifest_hash=access.manifest().manifest_hash,
             price_source_id=MODELED_PRICE_SOURCE_ID,
             price_source_kind=PriceSourceKind.MODELED,
             shortlist_size=shortlist_size, control_ledger=control,
         )
+        return replace(evaluation, feature_manifest_hashes={
+            family: export.manifest.manifest_hash for family, export in sorted(self._features.items())
+        })
 
 
 class FormulationLedger:

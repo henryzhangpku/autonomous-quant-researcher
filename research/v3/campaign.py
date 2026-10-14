@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from research.v3.evaluator import Evaluation, Stage
+from research.v3.features import FAMILIES as FEATURE_FAMILIES
 from research.v3.hypothesis import (
     DiversityDescriptor,
     canonical_hypothesis,
@@ -122,6 +123,8 @@ class CampaignContract:
             CANONICAL_RESEARCH_SCOPE, sort_keys=True, separators=(",", ":")
         ).encode()
     ).hexdigest()
+    # Feature exports a hypothesis may read, pinned by manifest hash per family.
+    feature_manifest_hashes: Mapping[str, str] = field(default_factory=dict)
 
     def validate(self) -> None:
         if not self.campaign_id or not self.evaluator_version:
@@ -145,6 +148,9 @@ class CampaignContract:
             raise ValueError("discovery budget and family quota must be positive")
         if tuple(sorted(set(self.required_families))) != self.required_families:
             raise ValueError("required_families must be sorted and unique")
+        if any(family not in FEATURE_FAMILIES or not _is_hash(value)
+               for family, value in self.feature_manifest_hashes.items()):
+            raise ValueError("feature manifest hashes must name known families with SHA-256 hashes")
         if (tuple(sorted(set(self.required_hypothesis_families)))
                 != self.required_hypothesis_families
                 or any(not family.strip() for family in self.required_hypothesis_families)):
@@ -153,7 +159,11 @@ class CampaignContract:
     @property
     def contract_hash(self) -> str:
         self.validate()
-        return _sha256(asdict(self))
+        payload = asdict(self)
+        if not payload["feature_manifest_hashes"]:
+            # Contracts without feature exports hash exactly as before the field existed.
+            payload.pop("feature_manifest_hashes")
+        return _sha256(payload)
 
 
 @dataclass(frozen=True)
@@ -250,6 +260,8 @@ def _evaluation_record(
         raise ValueError(f"callback must return a {expected_stage.value} Evaluation")
     if evaluation.evaluator_version != contract.evaluator_version:
         raise FrozenContractMismatch("evaluation version differs from the frozen contract")
+    if dict(evaluation.feature_manifest_hashes) != dict(contract.feature_manifest_hashes):
+        raise FrozenContractMismatch("evaluation read feature exports the contract did not pin")
     if (evaluation.stage_manifest_hash
             != contract.stage_manifest_hashes[expected_stage.value]):
         raise FrozenContractMismatch(

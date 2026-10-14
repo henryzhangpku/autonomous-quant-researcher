@@ -25,7 +25,7 @@ import os
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -97,15 +97,28 @@ class CandidateSessionView:
     open: float
     _bars: tuple[tuple[int, float, float, float, float], ...]
     _cutoff_hm: int
+    # Derived aggregates known before the session (research/v3/features.py);
+    # None when the hypothesis reads no feature.
+    _features: Any = None
 
     @classmethod
-    def at(cls, session: Session, cutoff_hm: int) -> "CandidateSessionView":
+    def at(cls, session: Session, cutoff_hm: int, features: Any = None) -> "CandidateSessionView":
         return cls(
             day=session.day,
             open=session.open,
             _bars=tuple(bar for bar in session.bars if bar[0] <= cutoff_hm),
             _cutoff_hm=cutoff_hm,
+            _features=features,
         )
+
+    def feature(self, family: str, metric: str) -> float | None:
+        """A covered derived metric from the snapshot, else None."""
+        if self._features is None:
+            return None
+        derived = next((item for item in self._features.families if item.family == family), None)
+        if derived is None or not derived.covered:
+            return None
+        return derived.metric(metric)
 
     def price_at(self, hm: int) -> float | None:
         if hm > self._cutoff_hm:

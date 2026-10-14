@@ -316,7 +316,14 @@ def _serialized_positive_evaluation(
 ) -> None:
     if not isinstance(block, Mapping) or block.get("stage") != stage:
         raise FindingContractError(f"{stage} modeled evidence is malformed")
-    if set(block) != {
+    feature_hashes = block.get("feature_manifest_hashes", {})
+    if not isinstance(feature_hashes, Mapping) or not all(
+        isinstance(family, str) and isinstance(value, str) and len(value) == 64
+        and all(c in "0123456789abcdef" for c in value)
+        for family, value in feature_hashes.items()
+    ):
+        raise FindingContractError(f"{stage} feature manifest hashes are malformed")
+    if set(block) - {"feature_manifest_hashes"} != {
         "eligible", "failures", "stage", "trades", "effective_weeks", "alpha",
         "bootstrap_seed", "price_source_id", "price_source_kind", "evaluator_version",
         "stage_manifest_hash",
