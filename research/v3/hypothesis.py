@@ -25,7 +25,13 @@ SUPPORTED_OBSERVATIONS = {
     "return_from_open",
     "return_between",
     "first_touch_before_entry",
+    "feature",
 }
+# Families a hypothesis may read through the typed feature boundary
+# (research/v3/features.py). A feature value is a daily derived aggregate known
+# before the session; a missing or uncovered value makes its comparison False.
+FEATURE_OBSERVATION_FAMILIES = {"portfolio_signal"}
+MAX_FEATURE_METRIC_LENGTH = 40
 
 
 class HypothesisError(ValueError):
@@ -95,6 +101,15 @@ def _validate_observation(node: Mapping[str, Any], entry: int) -> None:
         if start >= end:
             raise HypothesisError("return_between requires start_minute < end_minute")
         allowed = {"obs", "start_minute", "end_minute"}
+    elif obs == "feature":
+        family, metric = node.get("family"), node.get("metric")
+        if family not in FEATURE_OBSERVATION_FAMILIES:
+            raise HypothesisError(f"unsupported feature family: {family!r}")
+        if (not isinstance(metric, str) or not metric
+                or len(metric) > MAX_FEATURE_METRIC_LENGTH
+                or not all(c.islower() or c.isdigit() or c == "_" for c in metric)):
+            raise HypothesisError("feature metric must be a short snake_case name")
+        allowed = {"obs", "family", "metric"}
     else:
         after = _minute(node.get("after_minute"), "after_minute", entry=entry)
         if after >= entry:
@@ -103,6 +118,16 @@ def _validate_observation(node: Mapping[str, Any], entry: int) -> None:
         allowed = {"obs", "after_minute", "open_offset"}
     if set(node) != allowed:
         raise HypothesisError(f"unexpected fields for {obs}")
+
+
+def _reads_feature(node: Any) -> bool:
+    if not isinstance(node, Mapping):
+        return False
+    observation = node.get("observation")
+    if isinstance(observation, Mapping) and observation.get("obs") == "feature":
+        return True
+    children = node.get("args") if isinstance(node.get("args"), list) else []
+    return any(_reads_feature(child) for child in [*children, node.get("arg")])
 
 
 def _validate_expression(node: Any, entry: int, depth: int, count: list[int]) -> None:
@@ -120,6 +145,10 @@ def _validate_expression(node: Any, entry: int, depth: int, count: list[int]) ->
     if op == "not":
         if set(node) != {"op", "arg"}:
             raise HypothesisError("not requires exactly one arg")
+        if _reads_feature(node["arg"]):
+            # A missing feature makes its comparison False; under `not` that
+            # would turn "no evidence" into "condition holds".
+            raise HypothesisError("feature comparisons cannot appear under not")
         _validate_expression(node["arg"], entry, depth + 1, count)
         return
     if op in {"lt", "lte", "gt", "gte"}:
@@ -254,6 +283,8 @@ def _observe(node: Mapping[str, Any], session: CandidateSessionView, entry: int)
     obs = node["obs"]
     if obs == "return_from_open":
         return session.ret_from_open(node["minute"])
+    if obs == "feature":
+        return session.feature(node["family"], node["metric"])
     if obs == "return_between":
         start = session.price_at(node["start_minute"])
         end = session.price_at(node["end_minute"])
@@ -304,7 +335,10 @@ def _walk_descriptor(node: Mapping[str, Any], operations: list[str], minutes: li
         _walk_descriptor(node["arg"], operations, minutes, thresholds, shape)
         return
     observation = node["observation"]
-    operations.append(observation["obs"])
+    operations.append(
+        f"feature:{observation['family']}.{observation['metric']}"
+        if observation["obs"] == "feature" else observation["obs"]
+    )
     for key in ("minute", "start_minute", "end_minute", "after_minute"):
         if key in observation:
             minutes.append(observation[key])
