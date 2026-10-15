@@ -155,6 +155,7 @@ def build_modeled_ledgers(candidate: FrozenCandidate, access: StageAccess,
         selected = interpret_signal(hypothesis, view)
         structure = make_structure(hypothesis, entry_price)
         remaining = max(1, 960 - hypothesis.entry_minute) / (252.0 * 390.0)
+        worst, best = _payoff_bounds(structure)
         source = PriceSourceKind.MODELED.value
         skip_reason = "modeled economics unavailable"
         if quotes is None:
@@ -172,13 +173,18 @@ def build_modeled_ledgers(candidate: FrozenCandidate, access: StageAccess,
                           if book is not None else None for leg in structure.legs]
             if any(price is None for price in leg_prices):
                 signed_debit, prices = math.nan, ()
+            elif not (worst - 1e-9 <= sum(leg.qty * price for leg, price
+                                           in zip(structure.legs, leg_prices)) <= best + 1e-9):
+                # leg prints from different moments that no one could have traded
+                # together: a net price outside the spread's payoff range
+                signed_debit, prices = math.nan, ()
+                skip_reason = "leg prints violate the structure's no-arbitrage bounds"
             else:
                 signed_debit = sum(leg.qty * price
                                    for leg, price in zip(structure.legs, leg_prices))
                 prices = tuple((leg.cp, leg.strike, leg.qty, price)
                                for leg, price in zip(structure.legs, leg_prices))
         settlement = structure.settle(session.close)
-        worst, best = _payoff_bounds(structure)
         priced = (
             math.isfinite(signed_debit) and best > worst
             and worst - 1e-9 <= settlement <= best + 1e-9
