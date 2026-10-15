@@ -83,6 +83,7 @@ def test_family_level_reports_hash_as_before():
     report = _discovery_reports(exp)
     legacy = asdict(report)
     legacy.pop("metric")
+    legacy.pop("program_id")
     expected = hashlib.sha256(json.dumps([legacy], sort_keys=True, separators=(",", ":"),
                                          default=str).encode()).hexdigest()
     assert required_family_coverage_hash([report]) == expected

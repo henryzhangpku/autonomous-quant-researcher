@@ -12,13 +12,11 @@ from pathlib import Path
 from typing import Iterable, Literal
 
 from research.backtest.data import Session
+from research.v3.program import SPY_PRICE_V3, Program
 
 StageName = Literal["discovery", "validation", "holdout"]
-STAGE_DATES: dict[StageName, tuple[str, str | None]] = {
-    "discovery": ("2016-01-01", "2021-12-31"),
-    "validation": ("2022-01-01", "2024-12-31"),
-    "holdout": ("2025-01-01", None),
-}
+# The original program's schedule; a store is made and read under one Program.
+STAGE_DATES: dict[StageName, tuple[str, str | None]] = dict(SPY_PRICE_V3.stage_dates)
 
 def _canonical(value: object) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
@@ -57,13 +55,14 @@ def _session_record(session: Session) -> dict[str, object]:
 
 
 def materialize_stage_stores(root: Path, sessions: Iterable[Session],
-                             *, source_hash: str) -> dict[StageName, StageManifest]:
+                             *, source_hash: str,
+                             program: Program = SPY_PRICE_V3) -> dict[StageName, StageManifest]:
     """Create all three immutable stores; refuse to replace existing evidence."""
     if (len(source_hash) != 64
             or any(c not in "0123456789abcdef" for c in source_hash.lower())):
         raise ValueError("source_hash must be a 64-character hexadecimal content hash")
     root.mkdir(parents=True, exist_ok=True)
-    existing = [stage for stage in STAGE_DATES if (root / stage).exists()]
+    existing = [stage for stage in program.stage_dates if (root / stage).exists()]
     if existing:
         raise FileExistsError(f"immutable stage stores already exist: {', '.join(existing)}")
     all_sessions = sorted(sessions, key=lambda item: item.day)
@@ -76,7 +75,7 @@ def materialize_stage_stores(root: Path, sessions: Iterable[Session],
         except (TypeError, ValueError) as exc:
             raise ValueError(f"invalid canonical session: {item.day!r}") from exc
     manifests: dict[StageName, StageManifest] = {}
-    for stage, (start, end) in STAGE_DATES.items():
+    for stage, (start, end) in program.stage_dates.items():
         selected = [item for item in all_sessions if item.day >= start and (end is None or item.day <= end)]
         records = [_session_record(item) for item in selected]
         payload = b"".join(_canonical(record) + b"\n" for record in records)
@@ -107,11 +106,13 @@ def materialize_stage_stores(root: Path, sessions: Iterable[Session],
 class StageAccess:
     """A capability object that can resolve exactly one declared stage."""
 
-    def __init__(self, root: Path, allowed_stage: StageName):
-        if allowed_stage not in STAGE_DATES:
+    def __init__(self, root: Path, allowed_stage: StageName,
+                 program: Program = SPY_PRICE_V3):
+        if allowed_stage not in program.stage_dates:
             raise ValueError("unknown stage")
         self._root = root
         self.stage = allowed_stage
+        self.program = program
 
     def manifest(self) -> StageManifest:
         manifest_path = self._root / self.stage / "manifest.json"
@@ -136,7 +137,7 @@ class StageAccess:
                 or not isinstance(raw["content_hash"], str)):
             raise ValueError("stage manifest contains invalid field types")
         manifest = StageManifest(**raw)
-        expected_dates = STAGE_DATES[self.stage]
+        expected_dates = tuple(self.program.stage_dates[self.stage])
         if (manifest.schema_version != 1 or manifest.stage != self.stage
                 or (manifest.start_date, manifest.end_date) != expected_dates):
             raise ValueError("stage manifest does not match access capability")
@@ -181,7 +182,7 @@ class StageAccess:
         row_count = 0
         empty_session_count = 0
         previous_day: str | None = None
-        start, end = STAGE_DATES[self.stage]
+        start, end = self.program.stage_dates[self.stage]
         for line_number, line in enumerate(payload.splitlines(keepends=True), start=1):
             if not line.endswith(b"\n") or line == b"\n":
                 raise ValueError(f"stage session line {line_number} is not canonical JSONL")
