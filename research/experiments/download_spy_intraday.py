@@ -43,8 +43,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--symbol", default="SPY")
     parser.add_argument("--start", default="2016-01-01")
     parser.add_argument("--end", default=None, help="default: today")
+    parser.add_argument("--adjustment", choices=["all", "raw"], default="all",
+                        help="raw writes {symbol}-raw_5min.csv.gz: strikes and settlement "
+                             "live in unadjusted price space")
     args = parser.parse_args(argv)
-    out = output_path(args.symbol)
+    out = output_path(args.symbol if args.adjustment == "all" else f"{args.symbol}-raw")
 
     key = os.getenv("ALPACA_API_KEY", "")
     secret = os.getenv("ALPACA_API_SECRET", "") or os.getenv("ALPACA_SECRET_KEY", "")
@@ -84,10 +87,10 @@ def main(argv: list[str] | None = None) -> int:
         timeframe=TimeFrame(5, TimeFrameUnit.Minute),
         start=datetime.combine(start, datetime.min.time(), tzinfo=timezone.utc),
         end=datetime.combine(end + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc),
-        adjustment=Adjustment.ALL,
+        adjustment=Adjustment.ALL if args.adjustment == "all" else Adjustment.RAW,
         feed=DataFeed.SIP,
     )
-    print(f"fetching {args.symbol} 5-min bars {start} .. {end} (SIP, adjusted) ...")
+    print(f"fetching {args.symbol} 5-min bars {start} .. {end} (SIP, {args.adjustment}) ...")
     bars = client.get_stock_bars(request).data.get(args.symbol, [])
     print(f"received {len(bars)} raw bars")
 
