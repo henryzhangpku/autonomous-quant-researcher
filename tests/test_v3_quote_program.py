@@ -173,3 +173,19 @@ def test_contracts_bind_a_registered_program():
     assert contract.program is SPY_QUOTE_V1
     with pytest.raises(ValueError):
         replace(contract, research_scope={**SPY_QUOTE_V1.scope, "symbol": "QQQ"}).validate()
+
+
+def test_leg_prints_outside_the_spread_payoff_range_are_unpriced(tmp_path: Path):
+    sessions = _sessions(date(2024, 2, 5), 3)
+    manifests = materialize_stage_stores(tmp_path / "stages", sessions, source_hash=_h("bars"),
+                                         program=SPY_QUOTE_V1)
+    # a 2-wide call debit spread cannot cost more than 2: stale prints say 3.1
+    records = [_record(s.day, {500: 3.5, 502: 0.4}) for s in sessions]
+    materialize_quote_stores(tmp_path / "quotes", records, source_hash=_h("q"),
+                             program=SPY_QUOTE_V1)
+    candidate = _candidate({k: v.manifest_hash for k, v in manifests.items()})
+    access = StageAccess(tmp_path / "stages", "discovery", SPY_QUOTE_V1)
+    quotes = QuoteAccess(tmp_path / "quotes", "discovery", SPY_QUOTE_V1).open_days()
+    signal, _ = build_modeled_ledgers(candidate, access, quotes=quotes)
+    assert signal.rows and not any(r.priced for r in signal.rows)
+    assert all("no-arbitrage" in r.skip_reason for r in signal.rows)

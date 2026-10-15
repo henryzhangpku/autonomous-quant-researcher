@@ -63,8 +63,10 @@ QUOTE_MISSION = """Discover a robust SPY same-day options hypothesis that condit
 entry on a daily feature known before the open (the value as of the prior close).
 Every leg is priced from real same-day option trades at entry and settled at the
 close, so a feature helps if it predicts when same-day options are mispriced
-relative to the move that follows. Prefer simple, economically motivated
-conditions with a clear reason to persist."""
+relative to the move that follows. Legs far from the money, especially late in
+the day, often have no recent trade; a hypothesis needs at least 90% of its
+selected sessions priced, so prefer strikes near the money. Prefer simple,
+economically motivated conditions with a clear reason to persist."""
 
 
 def _sha(value: str) -> str:
