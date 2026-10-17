@@ -18,7 +18,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import shlex
 import subprocess
 import sys
 from dataclasses import asdict
@@ -26,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from research.autoresearch import _research_environment
+from research.commandline import split_command
 from research.external.campaign import BudgetExhausted, PortfolioCampaign, PortfolioCampaignContract
 from research.external.portfolio import ExternalEvaluatorSpec
 from research.external.proposer import ProposalError, RecipeProposer, openai_completion, scripted
@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "init":
         if (directory / "ledger.jsonl").exists():
             raise SystemExit(f"{directory} already holds a campaign")
-        command = tuple(shlex.split(args.evaluator_cmd))
+        command = split_command(args.evaluator_cmd)
         described = describe_evaluator(command, args.evaluator_cwd, args.universe)
         identity, vocabulary = described["evaluator"], described["vocabulary"]
         spec = ExternalEvaluatorSpec(name=identity["name"], version=identity["version"],

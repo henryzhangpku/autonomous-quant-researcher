@@ -12,7 +12,6 @@ import argparse
 import json
 import os
 import re
-import shlex
 import subprocess
 import sys
 import time
@@ -22,6 +21,8 @@ from pathlib import Path
 from typing import Any
 
 import tomllib
+
+from research.commandline import split_command
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -102,7 +103,7 @@ def _load_config(path: Path) -> LoopConfig:
     sandbox = data.get("sandbox", {})
     raw_command = loop.get("command")
     if isinstance(raw_command, str):
-        command = tuple(shlex.split(raw_command))
+        command = split_command(raw_command)
     elif isinstance(raw_command, list) and all(isinstance(item, str) for item in raw_command):
         command = tuple(raw_command)
     else:
