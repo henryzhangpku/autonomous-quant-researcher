@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import re
-import shlex
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from research.commandline import split_command
 
 
 class MissionConfigError(ValueError):
@@ -104,7 +105,7 @@ def _parse_policy(data: dict[str, Any]) -> ValidatorPolicy:
 
     raw_command = validator.get("command")
     if isinstance(raw_command, str):
-        command = tuple(shlex.split(raw_command))
+        command = split_command(raw_command)
     elif isinstance(raw_command, list) and all(isinstance(item, str) for item in raw_command):
         command = tuple(raw_command)
     else:
