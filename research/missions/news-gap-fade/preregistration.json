@@ -1,0 +1,142 @@
+{
+ "schema": "preregistration/1",
+ "mission": "news-gap-fade",
+ "frozen_on": "2026-10-17",
+ "designed_by": "Henry (owner)",
+ "authority": "research_only",
+ "hypothesis": "After an overnight gap accompanied by company news (<=3 tagged symbols, created in (prev 16:00 ET, D 09:25 ET]), fading the gap from 09:35/10:00 ET to 15:55 ET earns a positive SPY-adjusted return net of costs, more than fading a gap without such news.",
+ "hypothesis_source": "Jev equity_priced shadow lane 2026-10-08..2026-10-16, 835 news calls, 211 names; an anecdote (7 sessions, one regime, mid prices, no costs).",
+ "reserved": {
+  "untouched_from": "2025-07-01",
+  "contaminated_from": "2026-07-01"
+ },
+ "splits": {
+  "discovery": [
+   "2016-01-01",
+   "2022-12-31"
+  ],
+  "validation": [
+   "2023-01-01",
+   "2025-06-30"
+  ]
+ },
+ "universe": {
+  "sources": [
+   "S&P 500 (Wikipedia, 2026-10-17)",
+   "Nasdaq-100 (nasdaq.com, 2026-10-15)",
+   "qs-research most-active-stock-options-06-20-2026.csv"
+  ],
+  "symbols": 820,
+  "excluded": [
+   "SPY (hedge)",
+   "SATS (same security as ECHO)",
+   "PSKY (same security as SKYD; no bars)"
+  ],
+  "min_prior_raw_close": 5.0,
+  "min_median_dollar_volume_20d": 20000000.0,
+  "listed": 822
+ },
+ "grid": {
+  "thresholds": [
+   0.01,
+   0.02,
+   0.04
+  ],
+  "vol_buckets": [
+   "all",
+   "top_tercile"
+  ],
+  "entries": [
+   "09:35",
+   "10:00"
+  ],
+  "exit": "15:55",
+  "series": [
+   "NEWS",
+   "CONTROL"
+  ],
+  "cells_per_series": 12
+ },
+ "statistic": "equal-weight daily portfolio of side*(r_stock - r_spy), net of round-trip cost",
+ "costs": {
+  "base": 0.001,
+  "stress": 0.002,
+  "stress_top_tercile_extra": 0.004
+ },
+ "bootstrap": {
+  "block": "ISO calendar week",
+  "resamples": 2000,
+  "seed": 20261017,
+  "alpha": 0.05
+ },
+ "discovery_gates": [
+  "event_sessions >= 100",
+  "both chronological halves positive (base)",
+  "positive at base and every stress cost",
+  "positive after dropping the largest-|x| session and after dropping the best session",
+  "week-block bootstrap 5th pct > 0",
+  "NEWS - CONTROL week-block bootstrap 5th pct > 0"
+ ],
+ "validation_gates": [
+  "positive at every stress cost",
+  "both chronological halves positive at every stress cost"
+ ],
+ "part_b": {
+  "model": "qwen2.5:3b via local llama-server",
+  "threshold": 0.02,
+  "entry": "09:35",
+  "cap": 15000,
+  "max_headlines": 5,
+  "cut": 0.5,
+  "system_prompt": "You are an equity news analyst. You answer only with JSON.",
+  "user_template": "Stock ticker: {symbol}\nThese headlines about the company were published after the previous close and before today's open:\n{headlines}\n\nAt today's open the stock gapped {direction} {size:.1f}% versus the previous close.\n\nQuestion: Does this news justify a move of this size in this direction?\nReply with JSON {{\"justified\": p}}, where p is your probability from 0 to 1 that the news justifies the move.",
+  "response_schema": {
+   "type": "object",
+   "properties": {
+    "justified": {
+     "type": "number",
+     "minimum": 0,
+     "maximum": 1
+    }
+   },
+   "required": [
+    "justified"
+   ],
+   "additionalProperties": false
+  },
+  "temperature": 0,
+  "max_tokens": 24,
+  "concurrency_max": 2,
+  "pause": "weekdays 13:00-16:30 America/Los_Angeles",
+  "comparison": "mean(J daily) - mean(U daily), week-block bootstrap 5th pct > 0, >= 100 sessions per group",
+  "validation": "difference > 0 and both halves > 0, only if discovery passes",
+  "ticker_in_prompt": "the ticker as tagged at the time",
+  "failures": "unparseable 200 retried once then excluded; server/transport errors retried with backoff up to 6h"
+ },
+ "bound_code": [
+  "research/prereg/news_gap_fade.py",
+  "research/experiments/prepare_news_gap_fade.py",
+  "research/experiments/sweep_news_gap_fade.py"
+ ],
+ "early_closes_dropped": [
+  "2016-11-25",
+  "2017-07-03",
+  "2017-11-24",
+  "2018-07-03",
+  "2018-11-23",
+  "2018-12-24",
+  "2019-07-03",
+  "2019-11-29",
+  "2019-12-24",
+  "2020-11-27",
+  "2020-12-24",
+  "2021-11-26",
+  "2022-11-25",
+  "2023-07-03",
+  "2023-11-24",
+  "2024-07-03",
+  "2024-11-29",
+  "2024-12-24"
+ ],
+ "news_qualification": "non-empty headline, <=3 tagged symbols, created_at in (prev session 16:00 ET, D 09:25 ET], article id once, historical tickers mapped through strictly-earlier name changes"
+}
