@@ -441,7 +441,7 @@
    },
    "all_pass": false
   },
-  "jev_only": {
+  "classifier_only": {
    "gates": {
     "sharpe": false,
     "max_drawdown": true,
@@ -452,7 +452,7 @@
    },
    "all_pass": false
   },
-  "hmm_jev": {
+  "hmm_classifier": {
    "gates": {
     "sharpe": false,
     "max_drawdown": true,
@@ -463,7 +463,7 @@
    },
    "all_pass": false
   },
-  "hmm_jev_conf": {
+  "hmm_classifier_conf": {
    "gates": {
     "sharpe": false,
     "max_drawdown": true,
@@ -513,10 +513,10 @@
    ]
   ]
  },
- "jev": {
+ "classifier": {
   "calls": 940,
   "model_versions": [
-   "jev-1.13.0"
+   "classifier-v1"
   ]
  },
  "results": {
@@ -576,8 +576,8 @@
    "costs_paid": 0.0003,
    "time_in_market": 1.0
   },
-  "jev_only": {
-   "arm": "jev_only",
+  "classifier_only": {
+   "arm": "classifier_only",
    "candles": 940,
    "total_return": 0.01187194671759273,
    "ann_return": 0.003168958496831298,
@@ -592,8 +592,8 @@
    "gate_mean": 0.17925531914893617,
    "gate_zero_share": 0.8117021276595745
   },
-  "hmm_jev": {
-   "arm": "hmm_jev",
+  "hmm_classifier": {
+   "arm": "hmm_classifier",
    "candles": 940,
    "total_return": -0.002156631793719832,
    "ann_return": -0.0005786177378600543,
@@ -608,8 +608,8 @@
    "gate_mean": 0.17925531914893617,
    "gate_zero_share": 0.8117021276595745
   },
-  "hmm_jev_conf": {
-   "arm": "hmm_jev_conf",
+  "hmm_classifier_conf": {
+   "arm": "hmm_classifier_conf",
    "candles": 940,
    "total_return": 0.06712701382385311,
    "ann_return": 0.017570059285394235,
