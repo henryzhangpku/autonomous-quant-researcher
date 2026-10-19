@@ -36,7 +36,7 @@ from dataclasses import dataclass
 LOCAL_BASE_URL = "http://127.0.0.1:8080/v1"
 LOCAL_MODEL = "Qwen/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M"
 DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
-DEEPSEEK_MODEL = "deepseek-v4-flash"
+DEEPSEEK_MODEL = "deepseek-flash"
 PROBE_TIMEOUT_SECONDS = 1.5
 
 

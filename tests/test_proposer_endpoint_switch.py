@@ -55,7 +55,7 @@ def test_auto_uses_deepseek_when_no_local_server_exists() -> None:
     # The box this runs on today: no NVIDIA GPU, no llama-server.
     endpoint = resolve_endpoint(probe=_down)
     assert endpoint.provider == "deepseek"
-    assert endpoint.model == "deepseek-v4-flash"
+    assert endpoint.model == "deepseek-flash"
 
 
 def test_explicit_local_is_honoured_when_available() -> None:
@@ -104,7 +104,7 @@ def test_describe_never_leaks_the_key() -> None:
     endpoint = ProposerEndpoint(
         provider="deepseek",
         base_url="https://api.deepseek.com/v1",
-        model="deepseek-v4-flash",
+        model="deepseek-flash",
         api_key="sk-super-secret",
         reason="test",
     )
