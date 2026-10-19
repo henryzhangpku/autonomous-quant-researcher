@@ -25,6 +25,13 @@ LAB_VARS = (
     "LLM_API_KEY",
     "LLM_BASE_URL",
     "LLM_MODEL",
+    # pre-rename names, cleared so a developer's shell cannot leak into a test
+    "AUTOQUANT_DEEPSEEK_BASE_URL",
+    "AUTOQUANT_DEEPSEEK_MODEL",
+    "AUTOQUANT_DEEPSEEK_API_KEY",
+    "DEEPSEEK_BASE_URL",
+    "DEEPSEEK_MODEL",
+    "DEEPSEEK_API_KEY",
 )
 
 

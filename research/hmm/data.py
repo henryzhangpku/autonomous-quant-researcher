@@ -18,7 +18,8 @@ COLUMNS = ["ts", "open", "high", "low", "close", "volume"]
 
 
 def lake_root() -> Path:
-    env = os.environ.get("RESEARCH_DATALAKE_DIR")
+    # QS_DATALAKE_DIR is the pre-rename name, read only as a fallback; removed after one release.
+    env = os.environ.get("RESEARCH_DATALAKE_DIR") or os.environ.get("QS_DATALAKE_DIR")
     if env:
         return Path(env)
     raise FileNotFoundError("set RESEARCH_DATALAKE_DIR to the research data lake root")

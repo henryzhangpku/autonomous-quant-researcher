@@ -97,15 +97,23 @@ def _local_endpoint(reason: str) -> ProposerEndpoint:
     )
 
 
+# Pre-rename variable names, read only when the new name is unset.
+# Removed after one release.
+_LEGACY_BASE_URL = ("AUTOQUANT_DEEPSEEK_BASE_URL", "DEEPSEEK_BASE_URL")
+_LEGACY_MODEL = ("AUTOQUANT_DEEPSEEK_MODEL", "DEEPSEEK_MODEL")
+_LEGACY_API_KEY = ("AUTOQUANT_DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY")
+_LEGACY_REMOTE_CHOICE = "deepseek"
+
+
 def _remote_endpoint(reason: str) -> ProposerEndpoint:
-    base = _env("LLM_BASE_URL")
+    base = _env("LLM_BASE_URL", *_LEGACY_BASE_URL)
     if not base:
         reason = f"{reason}; LLM_BASE_URL is not set"
     return ProposerEndpoint(
         provider="remote",
         base_url=_with_v1(base) if base else "",
-        model=_env("LLM_MODEL", "AUTOQUANT_LAB_MODEL") or "",
-        api_key=_env("LLM_API_KEY", "AUTOQUANT_LAB_API_KEY") or "",
+        model=_env("LLM_MODEL", "AUTOQUANT_LAB_MODEL", *_LEGACY_MODEL) or "",
+        api_key=_env("LLM_API_KEY", "AUTOQUANT_LAB_API_KEY", *_LEGACY_API_KEY) or "",
         reason=reason,
     )
 
@@ -114,6 +122,8 @@ def resolve_endpoint(preference: str | None = None, probe=None) -> ProposerEndpo
     """Pick the proposer runtime. `probe` is injectable for tests."""
     probe = probe or local_server_is_listening
     choice = (preference or _env("AUTOQUANT_LAB_PROVIDER") or "auto").strip().lower()
+    if choice == _LEGACY_REMOTE_CHOICE:
+        choice = "remote"
 
     explicit_base = _env("AUTOQUANT_LAB_BASE_URL")
     if explicit_base and choice == "auto":
@@ -121,8 +131,8 @@ def resolve_endpoint(preference: str | None = None, probe=None) -> ProposerEndpo
         return ProposerEndpoint(
             provider="explicit",
             base_url=explicit_base,
-            model=_env("AUTOQUANT_LAB_MODEL", "LLM_MODEL") or "",
-            api_key=_env("AUTOQUANT_LAB_API_KEY", "LLM_API_KEY") or "local-not-required",
+            model=_env("AUTOQUANT_LAB_MODEL", "LLM_MODEL", *_LEGACY_MODEL) or "",
+            api_key=_env("AUTOQUANT_LAB_API_KEY", "LLM_API_KEY", *_LEGACY_API_KEY) or "local-not-required",
             reason="AUTOQUANT_LAB_BASE_URL set explicitly",
         )
 

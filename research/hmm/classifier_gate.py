@@ -56,7 +56,15 @@ def api_url() -> str | None:
 
 def api_key() -> str | None:
     """The classifier key, from CLASSIFIER_API_KEY."""
-    return os.environ.get("CLASSIFIER_API_KEY") or None
+    key = os.environ.get("CLASSIFIER_API_KEY")
+    if key:
+        return key
+    # Pre-rename fallbacks (the old variable, then the old key file); removed after one release.
+    key = os.environ.get("TYPESAFE_API_KEY")
+    if key:
+        return key
+    p = Path.home() / ".qs-tools" / "typesafe-api-key"
+    return (p.read_text(encoding="utf-8").strip() or None) if p.exists() else None
 
 
 def snapshot(features_row: dict[str, float], ret_1: float, ret_24: float) -> dict[str, Any]:
