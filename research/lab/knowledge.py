@@ -1,6 +1,6 @@
 """Prior evidence for new missions: the lab reads its own record before asking.
 
-The design gap this closes (Henry, 2026-08-16: "smarten up in this autonomous
+The design gap this closes (the owner, 2026-08-16: "smarten up in this autonomous
 quant research agent design"): every compiled mission started BLANK. The
 candidate memory blocks exact re-proposals, and the autopilot learns which
 phenomenon families pay — but the PROPOSER, the one component that writes new

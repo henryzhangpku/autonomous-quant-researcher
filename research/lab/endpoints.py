@@ -8,16 +8,19 @@ mystifying rather than obvious.
 
 Two runtimes, one switch:
 
-    AUTOQUANT_LAB_PROVIDER = auto (default) | local | deepseek
+    AUTOQUANT_LAB_PROVIDER = auto (default) | local | remote
 
   auto      use the local server when something is actually listening on it,
-            otherwise DeepSeek. This is what a laptop with a GPU and a laptop
+            otherwise the remote LLM (configurable). This is what a laptop with a GPU and a laptop
             without one both want, with no configuration.
-  local     prefer local, but FALL BACK to DeepSeek when nothing answers
+  local     prefer local, but FALL BACK to the remote LLM when nothing answers
             rather than failing the mission. A research loop that cannot
             propose is worth less than one running on a remote model, and the
             fallback is recorded so the choice is never silent.
-  deepseek  force remote, even if a local server is up.
+  remote    force remote, even if a local server is up.
+
+The remote LLM is configured only through LLM_BASE_URL, LLM_MODEL and
+LLM_API_KEY; there is no built-in remote endpoint.
 
 An explicit AUTOQUANT_LAB_BASE_URL still overrides everything, so existing
 setups keep working untouched.
@@ -35,8 +38,6 @@ from dataclasses import dataclass
 
 LOCAL_BASE_URL = "http://127.0.0.1:8080/v1"
 LOCAL_MODEL = "Qwen/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M"
-DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1"
-DEEPSEEK_MODEL = "deepseek-flash"
 PROBE_TIMEOUT_SECONDS = 1.5
 
 
@@ -64,7 +65,7 @@ def _env(*names: str) -> str | None:
 
 
 def _with_v1(url: str) -> str:
-    """OpenAI-compatible hosts serve under /v1; DEEPSEEK_BASE_URL is often bare."""
+    """OpenAI-compatible hosts serve under /v1; LLM_BASE_URL is often bare."""
     trimmed = url.rstrip("/")
     return trimmed if trimmed.endswith("/v1") else f"{trimmed}/v1"
 
@@ -96,13 +97,15 @@ def _local_endpoint(reason: str) -> ProposerEndpoint:
     )
 
 
-def _deepseek_endpoint(reason: str) -> ProposerEndpoint:
-    base = _env("AUTOQUANT_DEEPSEEK_BASE_URL", "DEEPSEEK_BASE_URL") or DEEPSEEK_BASE_URL
+def _remote_endpoint(reason: str) -> ProposerEndpoint:
+    base = _env("LLM_BASE_URL")
+    if not base:
+        reason = f"{reason}; LLM_BASE_URL is not set"
     return ProposerEndpoint(
-        provider="deepseek",
-        base_url=_with_v1(base),
-        model=_env("AUTOQUANT_DEEPSEEK_MODEL", "DEEPSEEK_MODEL", "AUTOQUANT_LAB_MODEL") or DEEPSEEK_MODEL,
-        api_key=_env("AUTOQUANT_DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY", "AUTOQUANT_LAB_API_KEY") or "",
+        provider="remote",
+        base_url=_with_v1(base) if base else "",
+        model=_env("LLM_MODEL", "AUTOQUANT_LAB_MODEL") or "",
+        api_key=_env("LLM_API_KEY", "AUTOQUANT_LAB_API_KEY") or "",
         reason=reason,
     )
 
@@ -118,13 +121,13 @@ def resolve_endpoint(preference: str | None = None, probe=None) -> ProposerEndpo
         return ProposerEndpoint(
             provider="explicit",
             base_url=explicit_base,
-            model=_env("AUTOQUANT_LAB_MODEL") or DEEPSEEK_MODEL,
-            api_key=_env("AUTOQUANT_LAB_API_KEY", "DEEPSEEK_API_KEY") or "local-not-required",
+            model=_env("AUTOQUANT_LAB_MODEL", "LLM_MODEL") or "",
+            api_key=_env("AUTOQUANT_LAB_API_KEY", "LLM_API_KEY") or "local-not-required",
             reason="AUTOQUANT_LAB_BASE_URL set explicitly",
         )
 
-    if choice in {"deepseek", "remote"}:
-        return _deepseek_endpoint("AUTOQUANT_LAB_PROVIDER=deepseek")
+    if choice == "remote":
+        return _remote_endpoint("AUTOQUANT_LAB_PROVIDER=remote")
 
     local = _local_endpoint("")
     if choice == "local":
@@ -133,10 +136,10 @@ def resolve_endpoint(preference: str | None = None, probe=None) -> ProposerEndpo
         # Asked for local, nothing there. Falling back beats failing the run:
         # the evaluator is identical either way, so the mission still produces
         # comparable evidence.
-        return _deepseek_endpoint(
-            f"AUTOQUANT_LAB_PROVIDER=local but nothing answered on {local.base_url}; fell back to DeepSeek"
+        return _remote_endpoint(
+            f"AUTOQUANT_LAB_PROVIDER=local but nothing answered on {local.base_url}; fell back to the remote LLM"
         )
 
     if probe(local.base_url):
         return _local_endpoint("auto: local server responding")
-    return _deepseek_endpoint("auto: no local server, using DeepSeek")
+    return _remote_endpoint("auto: no local server, using the remote LLM")

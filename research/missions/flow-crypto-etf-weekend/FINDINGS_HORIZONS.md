@@ -1,6 +1,6 @@
 # Findings, longer horizons: accumulated crypto-ETF flow vs crypto returns
 
-Henry, after the one-Friday null: "not just friday one day, longer horizon
+The owner, after the one-Friday null: "not just friday one day, longer horizon
 please." Read with `RESULTS_HORIZONS.md` (generated grid), `study_horizons.py`
 (pre-registered design) and `robustness_horizons.txt` (split-sample, time-trend
 and detrended checks).

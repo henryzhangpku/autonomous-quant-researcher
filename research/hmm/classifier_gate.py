@@ -1,4 +1,4 @@
-"""The Jev battery as a size gate (spec section 5, arms 2-4).
+"""A fast text classifier's question battery as a size gate (spec section 5, arms 2-4).
 
 Per candle, one call with the deterministic snapshot the state engine already
 computed (the five standardized features plus two raw returns), three typed
@@ -19,7 +19,7 @@ Gate (code):
 Confidence gating (arm 4): if the regime confidence is below CONF_MIN the
 answer is treated as abstain -> 0.0 (the article's "abstain when uncertain").
 
-Jev may only reduce size here (multipliers are in [0, 1]); it never raises
+The classifier may only reduce size here (multipliers are in [0, 1]); it never raises
 a cap, never places an order, and the RISK block runs after it.
 """
 
@@ -35,10 +35,10 @@ import numpy as np
 import pandas as pd
 import requests
 
-QUESTION_SET_VERSION = "hmm-regime/jev-gate/1"
-MODEL = "jev-latest"
+QUESTION_SET_VERSION = "hmm-regime/classifier-gate/1"
+# The classifier model id, from CLASSIFIER_MODEL (the endpoint's own default when unset).
+MODEL = os.environ.get("CLASSIFIER_MODEL") or "latest"
 CONF_MIN = 0.80
-API = "https://api.typesafe.ai/v1/systemone"
 QUESTIONS = {
     "regime": {"type": "choice", "instructions": "What market regime does this hourly/daily state describe for the next few candles?",
                "criteria": {"trending": None, "mean_reverting": None, "chaotic": None}},
@@ -49,12 +49,14 @@ QUESTIONS = {
 }
 
 
+def api_url() -> str | None:
+    """The classifier endpoint, from CLASSIFIER_URL (no default)."""
+    return os.environ.get("CLASSIFIER_URL") or None
+
+
 def api_key() -> str | None:
-    key = os.environ.get("TYPESAFE_API_KEY")
-    if key:
-        return key
-    p = Path.home() / ".qs-tools" / "typesafe-api-key"
-    return p.read_text(encoding="utf-8").strip() if p.exists() else None
+    """The classifier key, from CLASSIFIER_API_KEY."""
+    return os.environ.get("CLASSIFIER_API_KEY") or None
 
 
 def snapshot(features_row: dict[str, float], ret_1: float, ret_24: float) -> dict[str, Any]:
@@ -89,7 +91,7 @@ def multiplier(answers: dict[str, Any], *, confidence_gate: bool) -> tuple[float
     return 0.5, f"unclear regime: trending {trending:.2f}"
 
 
-class JevGate:
+class ClassifierGate:
     """gate_fn for the backtest: multiplier for candle index t, cached."""
 
     def __init__(self, symbol: str, timeframe: str, feats: pd.DataFrame, close: np.ndarray, *, cache_dir: Path, confidence_gate: bool,
@@ -97,7 +99,7 @@ class JevGate:
         self.feats = feats.reset_index(drop=True)
         self.close = close
         self.confidence_gate = confidence_gate
-        self.cache_path = cache_dir / f"jev_{symbol.replace('/', '-')}_{timeframe}_{QUESTION_SET_VERSION.replace('/', '_')}.jsonl"
+        self.cache_path = cache_dir / f"classifier_{symbol.replace('/', '-')}_{timeframe}_{QUESTION_SET_VERSION.replace('/', '_')}.jsonl"
         self.cache: dict[str, dict[str, Any]] = {}
         if self.cache_path.exists():
             for line in self.cache_path.read_text(encoding="utf-8").splitlines():
@@ -111,9 +113,11 @@ class JevGate:
         self.model_versions: set[str] = set()
 
     def _http(self, body: dict[str, Any]) -> dict[str, Any]:
-        key = api_key()
+        url, key = api_url(), api_key()
+        if not url:
+            raise RuntimeError("no classifier URL (set CLASSIFIER_URL)")
         if not key:
-            raise RuntimeError("no TypeSafe key")
+            raise RuntimeError("no classifier key (set CLASSIFIER_API_KEY)")
         wait = self.min_interval - (time.monotonic() - self._last)
         if wait > 0:
             time.sleep(wait)
@@ -121,7 +125,7 @@ class JevGate:
         last_err = "no attempt"
         for attempt in range(5):
             try:
-                r = requests.post(API, json=body, headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, timeout=30)
+                r = requests.post(url, json=body, headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"}, timeout=30)
             except requests.RequestException as exc:  # timeouts, resets: retry, then fall back
                 last_err = f"{type(exc).__name__}"
                 time.sleep(2.0 * (attempt + 1))
@@ -131,9 +135,9 @@ class JevGate:
                 time.sleep(2.0 * (attempt + 1))
                 continue
             if r.status_code >= 400:
-                raise RuntimeError(f"jev: HTTP {r.status_code} {r.text[:300]} for state {body['state']}")
+                raise RuntimeError(f"classifier: HTTP {r.status_code} {r.text[:300]} for state {body['state']}")
             return r.json()
-        # Jev unavailable -> deterministic fallback (spec 5: hold, never a stale or invented decision)
+        # classifier unavailable -> deterministic fallback (spec 5: hold, never a stale or invented decision)
         self.unavailable += 1
         return {"model": None, "answers": None, "unavailable": last_err}
 
@@ -160,11 +164,11 @@ class JevGate:
     def __call__(self, t: int) -> float:
         rec = self.answers_for(t)
         if rec["answers"] is None:
-            return 0.0  # Jev unavailable: hold (the deterministic fallback), never guess
+            return 0.0  # classifier unavailable: hold (the deterministic fallback), never guess
         m, _reason = multiplier(rec["answers"], confidence_gate=self.confidence_gate)
         return m
 
-    def share_cache_with(self, other: "JevGate") -> "JevGate":
+    def share_cache_with(self, other: "ClassifierGate") -> "ClassifierGate":
         """Two gates over the same candles (plain and confidence-gated) read and
         write ONE answer store, so a candle is asked once."""
         self.cache = other.cache

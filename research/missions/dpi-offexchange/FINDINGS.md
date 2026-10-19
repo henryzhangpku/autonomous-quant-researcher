@@ -2,13 +2,13 @@
 
 Read with `RESULTS.md` (the pre-registered grid), `robustness.md` (deciles,
 liquid subsample, top-1,000, monthly book) and `study.py` (design). First
-full run 2026-10-04 on the research data lake: Quiver off-exchange history
+full run 2026-10-04 on the research data lake: vendor off-exchange history
 (FINRA daily OTC volume per ticker, 2021-01 onward, 5,551 tickers) joined to
 Alpaca adjusted daily bars, every signal lagged one trading day.
 
 ## Verdict
 
-**The number Quiver sells, DPI (short share of off-exchange volume), predicts
+**The number the data vendor sells, DPI (short share of off-exchange volume), predicts
 nothing. The SHARE OF A STOCK'S TRADING THAT HAPPENS OFF-EXCHANGE does, and
 in the direction a retail-attention story predicts: the most off-exchange
 decile underperforms, every horizon, every year, in liquid names, after the
@@ -61,7 +61,7 @@ data vendor markets.
 
 ## What is not settled
 
-- **Survivorship.** The universe is every ticker Quiver reports today;
+- **Survivorship.** The universe is every ticker the vendor reports today;
   delisted names are absent. If retail-crowded names delist more often, the
   decile-10 underperformance is UNDERstated; if the reverse, overstated.
   Delisted-stock bars resolve this and should be the next data batch.

@@ -1,8 +1,8 @@
 # Mission: off-exchange share of volume vs forward US stock returns
 
-**Asked by Henry, 2026-10-03/04:** "find cheddarflow data linkage to stock
+**Asked by the owner, 2026-10-03/04:** "find options-flow data linkage to stock
 return prediction", then "give me alpha", then "do all". Data batch two of
-the qs-research lake (Quiver Quantitative, FINRA daily off-exchange volume
+the research data lake (an alternative-data vendor's export of FINRA daily off-exchange volume
 per ticker, 2021-01 onward, 5,551 tickers; Alpaca adjusted daily bars for
 the same universe).
 
@@ -10,13 +10,13 @@ the same universe).
 
 | Family | Source | Coverage |
 |---|---|---|
-| Off-exchange daily volume (OTC_Short, OTC_Total, DPI) | Quiver `historical/offexchange/{ticker}` via the lake | 2021-01-11 onward, 4.4M ticker-days |
+| Off-exchange daily volume (OTC_Short, OTC_Total, DPI) | the vendor's per-ticker off-exchange history via the lake | 2021-01-11 onward, 4.4M ticker-days |
 | Adjusted daily bars | Alpaca multi-symbol, `adjust=all` | 2020-12 onward, 5,551 symbols |
 
 Signals are lagged one trading day for publication. Universe filter: close
 >= $5 and 20-day median dollar volume >= $5M (liquid subsample $10 / $50M).
 
-## Result (first pass, qs-research `research/dpi_offexchange/`)
+## Result (first pass, run in the upstream research service)
 
 DPI (short share of off-exchange volume) is null. The off-exchange SHARE of
 consolidated volume predicts lower forward returns at every horizon, every

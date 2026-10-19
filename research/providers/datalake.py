@@ -1,19 +1,16 @@
-"""Read-only adapter for the qs-research data lake.
+"""Read-only adapter for the research data lake.
 
-qs-research keeps the raw vendor history on disk (CheddarFlow options prints
-per symbol per trading day, Alpaca bars per symbol per timeframe) and exports
-it in THIS repository's feature contract:
-
-    python -m qs_research_web.datalake export-flow IBIT --out exports/IBIT.flow.jsonl
-
-writes ``IBIT.flow.jsonl`` (canonical ``{"kind","payload"}`` envelopes, the
+The upstream research service keeps the raw vendor history on disk (options
+prints from the flow data provider per symbol per trading day, Alpaca bars per
+symbol per timeframe) and exports it in THIS repository's feature contract.
+An export of one symbol (for example IBIT) writes ``IBIT.flow.jsonl`` (canonical ``{"kind","payload"}`` envelopes, the
 ``FeatureExport`` JSONL) next to ``IBIT.flow.jsonl.manifest.json`` (the
 ``FeatureManifest``). Bars are gzip CSV with columns ts, open, high, low,
 close, volume.
 
 This module only reads those files and hands back the typed objects the loop
 already validates. It holds no credentials and opens no network connection:
-the lake is synced on the qs-research side, and the researcher sees an
+the lake is synced by the upstream research service, and the researcher sees an
 immutable, hashed export of it.
 """
 
@@ -72,7 +69,7 @@ def describe(jsonl_path: Path | str) -> dict[str, object]:
     first = export.records[0].event_time if export.records else None
     last = export.records[-1].event_time if export.records else None
     return {
-        "source": "qs-research data lake (CheddarFlow via flow-history)",
+        "source": "research data lake (flow data provider export)",
         "records": export.manifest.record_count,
         "windows": export.manifest.window_count,
         "first_event": first,

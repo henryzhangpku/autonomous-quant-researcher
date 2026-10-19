@@ -1,7 +1,7 @@
 # HMM regime trading system: spec, architecture, plan (for approval before code)
 
-Source: the "HMM regime trading system" prompt Henry pasted 2026-10-04, with
-its placeholders filled below. Decision taken with Henry the same night: build
+Source: the "HMM regime trading system" prompt the owner pasted 2026-10-04, with
+its placeholders filled below. Decision taken with the owner the same night: build
 it inside this repository's loop, not a third-party harness; BTC/USD hourly
 first, SPY daily as the replication. This document is the three approval
 gates the prompt asks for (spec, architecture, plan) in one pass; nothing
@@ -38,7 +38,7 @@ walk-forward backtest with costs.
 | Sizing | quarter-Kelly cap x filtered probability of the active state x (1 - normalized posterior entropy); zero in CRASH and when uncertain | prompt; Kelly from the playbook's own in-sample edge, capped |
 | Calibration before sizing | Brier score and reliability curve per state on realized next-candle outcomes; sizing stays at the minimum until ECE < 0.05 | prompt |
 | Risk rules (code, no override) | max position 1x notional of allotted capital; daily loss limit 2%; max drawdown 10% (kill); state leverage caps CALM 1.0 / CHOP 0.5 / STRESS 0.25 / CRASH 0; stale data > 2 candles -> flat; kill switch flattens and halts | prompt + house limits |
-| Manual approval above | $5,000 notional per order | Henry's call; adjustable in config, never in a model |
+| Manual approval above | $5,000 notional per order | the owner's call; adjustable in config, never in a model |
 | Deploy target | Mac Mini (24/7, restart via launchd) with Telegram alerts; this PC as the dev box | existing always-on host |
 
 **What the system is NOT.** It is not a prediction of price. The HMM is a
@@ -86,8 +86,8 @@ Modules (new, under `research/hmm/`):
 | `dashboard.py` | state probabilities, current state, expected duration, active playbook, last action, result | renders from the ledger alone |
 | `live.py` (phase 2) | Alpaca paper loop, Telegram alerts, daily report | paper fills reconcile to the ledger |
 
-Data in: the research data lake (`qs_research_web/datalake`, read through
-`research/providers/qs_datalake.py`), BTC/USD hourly and SPY daily; the
+Data in: the research data lake (root: `RESEARCH_DATALAKE_DIR`, read through
+`research/providers/datalake.py`), BTC/USD hourly and SPY daily; the
 backfill to 2021 / 2015 is running. Keys: `.env` only, never in code or logs.
 
 ## 3. Plan (test-first, each phase ends with a review against this spec)
@@ -113,14 +113,14 @@ backfill to 2021 / 2015 is running. Keys: `.env` only, never in code or logs.
    alerts, daily report; paper runs until its results match the backtest.
 7. **Final check** before any live money: the prompt's questions answered in
    writing, ending with "WHAT COULD BLOW UP THIS ACCOUNT?"; live only when
-   every answer is clean and Henry approves above the manual-approval size.
+   every answer is clean and the owner approves above the manual-approval size.
 
 Rollback at every phase: each module is one commit; `git revert` of the
 phase commit restores the previous state; the ledger is append-only.
 
 ## 4. Scope beyond BTC and SPY: how this becomes FST's regime layer
 
-Henry (2026-10-04): "does this sound like new architecture of our FST? ...
+The owner (2026-10-04): "does this sound like new architecture of our FST? ...
 more than just BTC or SPX." Mapping, honestly:
 
 | Prompt layer | FST today | What the mission adds |
@@ -144,7 +144,7 @@ order, each gated:
    regime as a shared feature; evaluated cross-sectionally the way the
    off-exchange study was (does conditioning on state improve the families
    after costs?), served as `GET /api/v1/signals/regime/{ticker}` from
-   qs-research where the Python model lives, consumed by the Deno runner as
+   the upstream research service where the Python model lives, consumed by the Deno runner as
    a size/veto input. Kalshi series get the BTC and SPY regimes directly.
 
 What does not change: no model ever owns a hard limit; every threshold is
@@ -152,52 +152,51 @@ code; a regime read that is stale or drifting freezes entries rather than
 guessing; parity by construction (server-side logic, every surface reads the
 same state).
 
-## 5. Jev in the loop: the FST agent upgrade, specified
+## 5. A fast classifier in the loop: the FST agent upgrade, specified
 
-Henry (2026-10-04): "i have planned to upgrade FST agent to Jev for a long
-time, since we had the Jev api key... it is good for both speed and cost
-efficient." Borrowed from the article, with our own measurement kept in view:
-on 2026-09-23 Jev showed NO EDGE on entry facts in FST, and its proven role in
+The owner (2026-10-04) planned to move the FST agent onto a fast text classifier,
+for both speed and cost efficiency. Borrowed from the article, with our own measurement kept in view:
+on 2026-09-23 the classifier showed NO EDGE on entry facts in FST, and its proven role in
 our stack is a one-sided gate and position monitor (it may only add caution).
-So Jev enters this system as a second, fast judgment layer that is TESTED
+So the classifier enters this system as a second, fast judgment layer that is TESTED
 against the HMM, not assumed to beat it:
 
 | Judgment | Who answers | Why |
 |---|---|---|
 | What state is the market in, with what probability | HMM (statistical, refit on schedule) | reproducible, auditable, calibrated on our own tape |
-| Is this candle's flow informed or noise; is liquidity stressed; is this setup clean; has execution degraded; urgency to cut inventory | Jev battery (typed Choice/Noul/Score, one call, 70-500 ms) | questions the HMM cannot ask, answered in the budget of one cycle at ~$0.00001 each |
+| Is this candle's flow informed or noise; is liquidity stressed; is this setup clean; has execution degraded; urgency to cut inventory | classifier battery (typed Choice/Noul/Score, one call, 70-500 ms) | questions the HMM cannot ask, answered in the budget of one cycle at ~$0.00001 each |
 | Thresholds, size, vetoes, orders | code | never a model |
 | Why a state call was wrong; what to change | nightly reviewer (Opus/Claude) | reasoning, once a day, off the critical path |
 
-Rules carried over from the jevelin doctrine and the article's honest list:
+Rules carried over from the classifier-gating doctrine and the article's honest list:
 atomic questions composed in code; one threshold per action scaled to the
-cost of being wrong; Jev answers may only reduce size, widen, hold or veto
+cost of being wrong; the classifier answers may only reduce size, widen, hold or veto
 until its calibration record on OUR fills says otherwise; the model version
 is pinned and logged on every response; late past the cycle deadline means
-hold, never a stale decision; Jev unavailable means deterministic fallback.
+hold, never a stale decision; the classifier unavailable means deterministic fallback.
 
 The backtest therefore runs FOUR arms on identical data, costs and limits,
 which is the real research question of the mission:
 
 1. playbooks switched by the HMM alone
-2. playbooks gated by the Jev battery alone (regime Choice + toxicity Noul + setup Score)
-3. HMM switching + Jev gating
-4. arm 3 + confidence gating (abstain when Jev confidence is below the per-action threshold)
+2. playbooks gated by the classifier battery alone (regime Choice + toxicity Noul + setup Score)
+3. HMM switching + classifier gating
+4. arm 3 + confidence gating (abstain when the classifier confidence is below the per-action threshold)
 
 Calibration is verified before sizing on it: reliability curve, Brier and
-ECE of Jev's answers against realized outcomes on our tape; a bent curve
+ECE of the classifier's answers against realized outcomes on our tape; a bent curve
 gets Platt scaling in the policy layer, as the article prescribes. For the
-backtest, Jev is called on historical snapshots (the state engine is
+backtest, the classifier is called on historical snapshots (the state engine is
 deterministic, so each snapshot is exactly what live would have sent).
 
 For FST itself this is the upgrade path: the per-cycle LLM brain call at
-entry becomes a Jev battery where the decision is typed (regime, toxicity,
+entry becomes a classifier battery where the decision is typed (regime, toxicity,
 setup quality, exit urgency), the LLM stays for the nightly review and the
 rare case the battery flags, and the runner reads the result as it reads
 any signal family. Cost and latency per cycle fall by two orders of
 magnitude; nothing about limits or sizing authority moves.
 
-### 5a. Borrowed from the "jev execution layer" CLAUDE.md (Henry, 2026-10-04)
+### 5a. Borrowed from the classifier execution-layer notes (the owner, 2026-10-04)
 
 Three rules worth keeping verbatim, all compatible with the layers above:
 
@@ -231,7 +230,7 @@ liquidation feeds) and is out of scope for this mission.
   rejection is a valid and likely outcome.
 - Costs assumed are retail-conservative; the paper phase measures the real
   ones and the backtest must be re-run with them before live.
-- Jev was at capacity on 2026-09-22 and showed no edge on entry facts on
+- The classifier was at capacity on 2026-09-22 and showed no edge on entry facts on
   2026-09-23; arm 2 may lose to arm 1 and the mission must say so.
 - The "trend feature" and the playbooks are hand-written by the reviewer,
   which the loop's own doctrine (no hand-authored strategy rules) frowns on;

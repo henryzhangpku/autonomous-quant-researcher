@@ -912,7 +912,7 @@ body.bc-pointer .bc-exit { opacity: 1; pointer-events: auto; }
 
   /* Phone rail: desk chip left, start button right — one clean row. The
      rotating rail line is hidden here — at 12px underneath a floating
-     button it was unreadable noise (Henry's 8/15 screenshot). */
+     button it was unreadable noise (the owner's 8/15 screenshot). */
   .bc-rail { flex-wrap: wrap; gap: 10px; padding: 10px 14px; }
   
   
@@ -944,7 +944,7 @@ body.bc-pointer .bc-exit { opacity: 1; pointer-events: auto; }
   letter-spacing: .04em;
   cursor: pointer;
   box-shadow: 0 6px 22px rgba(0, 0, 0, .5);
-  /* .55 read as 'blocked' on the only UI (Henry, 2026-08-17); slightly
+  /* .55 read as 'blocked' on the only UI (the owner, 2026-08-17); slightly
      recessed, clearly available, full on hover/focus. */
   opacity: .88;
   transition: opacity .15s ease;
@@ -1022,7 +1022,7 @@ body.bc-pointer .bc-exit { opacity: 1; pointer-events: auto; }
 @media (max-width: 620px) {
   /* Float the start button as a normal mobile CTA. Inline in the rail
      it lands at the END of a long scrolling page — unreachable, which
-     read as 'the button is blocked' (Henry, 2026-08-17). The rail's
+     read as 'the button is blocked' (the owner, 2026-08-17). The rail's
      bottom padding reserves its footprint so it covers nothing. */
   .bc-new {
     position: fixed;

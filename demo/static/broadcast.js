@@ -57,8 +57,8 @@
     'Failures are kept on purpose: a best-of-N result cannot hide its trial count.',
   ];
 
-  // The QS desk link is hidden from the public surface for now (Henry,
-  // 2026-08-17); the rail carries no outbound CTA. History preserves it.
+  // The QS desk link is hidden from the public surface for now (the
+  // owner, 2026-08-17); the rail carries no outbound CTA. History preserves it.
 
   const state = {
     on: false,
@@ -105,7 +105,7 @@
    *  the old test (`queued`/`running` only) could not see them at all: with a
    *  lab question genuinely running, the board showed the last finished
    *  canonical session and a big IDLE badge — the engine looked stopped while
-   *  it was working (Henry, 2026-08-15). Findings are artifacts and are never
+   *  it was working (the owner, 2026-08-15). Findings are artifacts and are never
    *  live whatever their status string says. */
   const WORKING_STATUSES = ['queued', 'running', 'ready'];
 
@@ -298,7 +298,7 @@
     start.textContent = '+ New research';
     start.addEventListener('click', () => openSheet());
     // Lives IN the rail: on a phone it slots inline next to the desk chip
-    // (floating it overlapped the rail text — Henry's 8/15 screenshot); on
+    // (floating it overlapped the rail text — the owner's 8/15 screenshot); on
     // desktop it stays fixed bottom-right, where the parent is irrelevant.
     el.querySelector('.bc-rail').append(start);
 
@@ -1437,7 +1437,7 @@
     // A sweep in flight LEADS the narration: the campaign on screen is real
     // history, but the live fact is the grid running underneath it — without
     // this line the board reads IDLE over a stale campaign and looks dead
-    // while the engine is working (Henry's "dead?", 2026-08-16).
+    // while the engine is working (the owner's "dead?", 2026-08-16).
     const sweep = running ? null : sweepInFlight(health);
     if (kicker) {
       kicker.textContent = running || sweep

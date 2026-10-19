@@ -1,4 +1,4 @@
-"""Buy-the-dip overnight call debit spreads on SPX, gated (Henry, 2026-08-17).
+"""Buy-the-dip overnight call debit spreads on SPX, gated (the owner, 2026-08-17).
 
 "Can buying the dip overnight with an SPX debit spread make money
 CONSISTENTLY?" The lab's adjacent evidence: plain overnight debit spreads

@@ -1,7 +1,7 @@
 # Pre-registration: 20-day crypto-ETF flow contrarian vs two-week ETH (frozen 2026-10-04 00:45 UTC)
 
 The lead (FINDINGS_HORIZONS.md): `basket_bull_share_20`, the premium-weighted
-bull share of the last 20 trading days of CheddarFlow prints on IBIT, ETHA,
+bull share of the last 20 trading days of flow data provider prints on IBIT, ETHA,
 FBTC, GBTC, ARKB and BITO, is NEGATIVELY related to the ETH log return over
 the following two weeks (Spearman -0.42 raw, -0.41 after detrending, p 0.001,
 58 Friday observations overlapping by half, present in both halves). It was
@@ -32,7 +32,7 @@ recorded in FINDINGS_HORIZONS.md for reference and is not evidence.
 
 ## Scoring
 
-`qs-research/research/cf_crypto_etf_weekend/score_forward.py` appends one
+`score_forward.py` in the upstream research service appends one
 row per Friday to `forward_calls.csv` (call, s, outcome when known) and is
 idempotent; it reads only the lake. Acceptance on the forward rows, all
 required, first checked when 25 non-overlapping calls have resolved (about

@@ -1,6 +1,6 @@
 # Friday crypto-ETF options flow vs the weekend crypto move
 
-Generated 2026-10-03T17:51+00:00 from the research data lake (CheddarFlow flow-history via qs-research, Alpaca bars). Design and caveats are in `study.py`'s docstring.
+Generated 2026-10-03T17:51+00:00 from the research data lake (flow data provider history via the upstream research service, Alpaca bars). Design and caveats are in `study.py`'s docstring.
 
 Weekends evaluated: **60** (2025-07-11 to 2026-09-25). IBIT prints per Friday: median 12, min 1, max 261.
 

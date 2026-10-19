@@ -569,13 +569,13 @@ class OpenAICompatibleDeclarativeProposer(DeclarativeProposer):
         # This is the path the web app and autopilot actually use, so without
         # it the product surface still defaulted to api.openai.com with the
         # "local-not-required" placeholder and 401'd on any box without a
-        # local model — while `research.cli llm` cheerfully reported DeepSeek.
+        # local model — while `research.cli llm` cheerfully reported the remote LLM.
         # One resolver, both proposers, one answer.
         self.endpoint = resolve_endpoint()
         self.model = model or self.endpoint.model
         self._response_schema = proposal_schema(features)
         # Probed once and remembered: json_schema is an OpenAI extension and
-        # DeepSeek rejects it outright.
+        # many OpenAI-compatible hosts reject it outright.
         self._json_schema_supported = True
         self.max_tokens = int(
             os.environ.get("AUTOQUANT_LAB_MAX_TOKENS") or 16_384

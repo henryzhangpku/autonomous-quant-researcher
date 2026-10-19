@@ -1,6 +1,6 @@
 # hmm-regime: plan (checkable), per SPEC.md
 
-Approved by Henry 2026-10-04 ("Approve, start phase 1"). Each phase ends with
+Approved by the owner 2026-10-04 ("Approve, start phase 1"). Each phase ends with
 a review against the spec before the next starts; the backtest result decides
 whether anything goes further.
 
@@ -17,7 +17,7 @@ whether anything goes further.
 - [x] tests: planted regimes recovered and labelled; simpler model preferred; filtered probabilities independent of future candles; filter != smoother on an overlapping tape; continuation equals whole-series filtering; labels survive a refit
 - [x] `fit_report.py` on BTC/USD hourly (fit to 2024-01, validate to 2024-07, filter forward): states, matrix, durations, per-state next-candle returns by segment -> fits/BTC-USD_hour/REPORT.md
 - [x] same on SPY daily -> fits/SPY_day/REPORT.md
-- [x] PAUSE: Henry reviewed the states 2026-10-04; approved the admissibility constraint (share >= 2%, duration >= 3) and SIZE-REGULATION playbooks
+- [x] PAUSE: the owner reviewed the states 2026-10-04; approved the admissibility constraint (share >= 2%, duration >= 3) and SIZE-REGULATION playbooks
 
 ## Phase 3: playbooks + switching + sizing + risk
 - [x] playbooks/CALM_UP.md, CHOP.md, STRESS.md, CRASH.md with entry, exit, stop, TP, max size, invalidation; frozen before the backtest
@@ -27,13 +27,13 @@ whether anything goes further.
 
 ## Phase 4: walk-forward backtest with costs (the gate)
 - [x] 30-day expanding refits (warm-started), label matching, drift freeze
-- [x] arms: system / fixed-cap diagnostic / static trend / buy-and-hold / Jev only / HMM+Jev / HMM+Jev+confidence (Jev jev-1.13.0, cached per candle, version logged); SPY daily done (REJECTED), BTC hourly running
+- [x] arms: system / fixed-cap diagnostic / static trend / buy-and-hold / classifier only / HMM+classifier / HMM+classifier+confidence (classifier model pinned, cached per candle, version logged); SPY daily done (REJECTED), BTC hourly running
 - [x] baselines: buy-and-hold, best single static playbook (trend rule without regimes)
 - [x] gates verbatim (code): Sharpe > 1.5, DD < 15%, hit > 55%, t > 2.0, beats both baselines after costs; per state and whole system
 - [x] BACKTEST.md per asset; FINDINGS.md: REJECTED on both assets; no strategy.md written
 
 ## Phase 5: calibration + drift + dashboard (calibration + drift ran inside the backtest; dashboard and live are NOT built: the gates failed)
-- [ ] per-state Brier / reliability on the backtest; Jev reliability + Platt if bent
+- [ ] per-state Brier / reliability on the backtest; classifier reliability + Platt if bent
 - [ ] drift monitor (state means/vol, transition rows, live log-likelihood)
 - [ ] dashboard from the ledger
 

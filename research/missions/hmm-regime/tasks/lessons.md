@@ -29,7 +29,7 @@
   stayed frozen and the rejection stands. Rule: size a stop to the holding
   horizon, not the candle; and a base rule must be sanity-checked for time
   in market on the fit window before it is frozen.
-- 2026-10-04 (phase 4, BTC): a single 30-second read timeout from Jev killed
+- 2026-10-04 (phase 4, BTC): a single 30-second read timeout from the classifier killed
   a run that had already cached 23,000 answers. Network failure is now a
   hold (the spec's deterministic fallback), not cached, re-asked later.
   Rule: the fallback ladder must exist in the backtest harness too, not

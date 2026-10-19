@@ -261,14 +261,14 @@ setup is `llama.cpp` serving Qwen2.5-Coder-7B on a consumer GPU:
 ```bash
 llama-server -hf Qwen/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M --host 127.0.0.1 --port 8080 -ngl 99 --ctx-size 8192
 
-export AUTOQUANT_LAB_PROVIDER=auto        # auto | local | deepseek
+export AUTOQUANT_LAB_PROVIDER=auto        # auto | local | remote
 export AUTOQUANT_LAB_BASE_URL=http://127.0.0.1:8080/v1
 export AUTOQUANT_LAB_MODEL=Qwen/Qwen2.5-Coder-7B-Instruct-GGUF:Q4_K_M
 uv run python -m research.cli llm   # prints which runtime will be used, and why
 ```
 
-For a remote proposer set `DEEPSEEK_API_KEY` (or `AUTOQUANT_DEEPSEEK_API_KEY`) and
-`AUTOQUANT_LAB_PROVIDER=deepseek`. Model choice never changes the evaluator, so
+For a remote proposer (an LLM, configurable) set `LLM_BASE_URL`, `LLM_MODEL` and
+`LLM_API_KEY`, and `AUTOQUANT_LAB_PROVIDER=remote`; there is no built-in remote endpoint. Model choice never changes the evaluator, so
 switching runtimes cannot move a metric — only who proposes the candidate.
 
 **Stage data.** Historical bars come from Alpaca (free tier is sufficient for
@@ -279,6 +279,17 @@ not shipped.
 export ALPACA_API_KEY=... ALPACA_API_SECRET=...
 uv run python -m research.experiments.download_spy_intraday   # 5-minute RTH bars → research/data/
 ```
+
+Optional external inputs are configured only through environment variables;
+none has a built-in default endpoint:
+
+| Variable | Used by |
+|---|---|
+| `RESEARCH_DATALAKE_DIR` | root of the research data lake (bars and flow exports read by `research/hmm/` and `research/providers/datalake.py`) |
+| `CLASSIFIER_URL` | the fast text classifier endpoint used by the HMM regime size gate (`research/hmm/classifier_gate.py`) |
+| `CLASSIFIER_API_KEY` | bearer key for that endpoint (replaces the former vendor-named key variable) |
+| `CLASSIFIER_MODEL` | model id sent to that endpoint (default `latest`) |
+| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY` | the remote proposer LLM (configurable) used when `AUTOQUANT_LAB_PROVIDER` is `remote`, or as the fallback when no local server answers |
 
 **Run a mission.** A mission is a natural-language statement plus a frozen
 policy that names the validator, the metric, the budget, and the target.

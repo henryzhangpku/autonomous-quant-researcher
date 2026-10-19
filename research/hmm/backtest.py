@@ -27,7 +27,7 @@ probabilities and switching decisions:
                 so the regime layer is visible even when Kelly says f* <= 0
     trend_only  the base rule with no regime (best static playbook)
     buy_hold    fully invested
-    + any gated arms passed in (Jev arms 2-4): {"name": {"gate": fn(t)->mult, "regime": bool, "kelly": bool}}
+    + any gated arms passed in (classifier arms 2-4): {"name": {"gate": fn(t)->mult, "regime": bool, "kelly": bool}}
 
 Gates (verbatim from the prompt, on the out-of-sample segment): Sharpe >
 1.5, max drawdown < 15%, hit rate > 55%, t-stat > 2.0, beats buy-and-hold
@@ -356,25 +356,25 @@ def main() -> int:
     ap.add_argument("--val-end", required=True)
     ap.add_argument("--fee-bps", type=float, default=10.0)
     ap.add_argument("--slip-bps", type=float, default=5.0)
-    ap.add_argument("--jev", action="store_true", help="add the three Jev arms (calls the API; cached)")
+    ap.add_argument("--classifier", action="store_true", help="add the three classifier arms (calls the API; cached)")
     args = ap.parse_args()
     gates = None
-    if args.jev:
-        from research.hmm.jev_gate import JevGate
+    if args.classifier:
+        from research.hmm.classifier_gate import ClassifierGate
 
         candles = load_candles(args.symbol, args.timeframe)
         feats = build_features(candles)
         clean = feats.dropna(subset=FEATURES)
         close = candles["close"].to_numpy(dtype=float)[clean.index.to_numpy()]
         cache = MISSION / "fits" / f"{args.symbol.replace('/', '-')}_{args.timeframe}"
-        plain = JevGate(args.symbol, args.timeframe, clean, close, cache_dir=cache, confidence_gate=False)
-        conf = JevGate(args.symbol, args.timeframe, clean, close, cache_dir=cache, confidence_gate=True).share_cache_with(plain)
-        gates = {"jev_only": {"gate": plain, "regime": False, "kelly": False},
-                 "hmm_jev": {"gate": plain, "regime": True, "kelly": False},
-                 "hmm_jev_conf": {"gate": conf, "regime": True, "kelly": False}}
+        plain = ClassifierGate(args.symbol, args.timeframe, clean, close, cache_dir=cache, confidence_gate=False)
+        conf = ClassifierGate(args.symbol, args.timeframe, clean, close, cache_dir=cache, confidence_gate=True).share_cache_with(plain)
+        gates = {"classifier_only": {"gate": plain, "regime": False, "kelly": False},
+                 "hmm_classifier": {"gate": plain, "regime": True, "kelly": False},
+                 "hmm_classifier_conf": {"gate": conf, "regime": True, "kelly": False}}
     res = run_backtest(args.symbol, args.timeframe, fit_end=args.fit_end, val_end=args.val_end, fee_bps=args.fee_bps, slip_bps=args.slip_bps, gates=gates)
     if gates:
-        res["jev"] = {"calls": gates["jev_only"]["gate"].calls, "unavailable": gates["jev_only"]["gate"].unavailable, "model_versions": sorted(gates["jev_only"]["gate"].model_versions)}
+        res["classifier"] = {"calls": gates["classifier_only"]["gate"].calls, "unavailable": gates["classifier_only"]["gate"].unavailable, "model_versions": sorted(gates["classifier_only"]["gate"].model_versions)}
     out = write_report(res, MISSION / "fits" / f"{args.symbol.replace('/', '-')}_{args.timeframe}")
     print(open(out, encoding="utf-8").read()[:3500])
     return 0

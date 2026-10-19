@@ -126,7 +126,7 @@ def _proposer_with(completions) -> OpenAIProposer:
 
 
 def test_endpoints_without_json_schema_fall_back_to_json_object() -> None:
-    # DeepSeek and most OpenAI-compatible endpoints reject json_schema. Before
+    # Many hosted and most OpenAI-compatible endpoints reject json_schema. Before
     # the fallback this failed all 50 attempts of a mission without evaluating
     # a single candidate (2026-08-15).
     completions = _FormatRecordingCompletions(reject_schema=True)
@@ -178,7 +178,7 @@ class _TruncatingCompletions:
 
 
 def test_truncation_is_reported_as_truncation() -> None:
-    # Measured with deepseek-v4-flash on the real spy-0dte mission: at 2500
+    # Measured with the configured model on the real spy-0dte mission: at 2500
     # tokens it spent the entire budget reasoning and returned 0 characters.
     # The old message called that "empty content", which points at the prompt
     # or the model instead of the budget.

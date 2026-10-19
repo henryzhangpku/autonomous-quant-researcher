@@ -10,9 +10,9 @@ Generated 2026-10-04T01:53+00:00. Out of sample 2023-01-03 to 2026-10-01 (940 ca
 | hmm_fixed | +24.3% | +6.0% | 1.01 | 5.6% | 1.96 | 9 | 44.4% | +268 | 0.005 | 33% |  |
 | trend_only | +19.8% | +5.0% | 0.68 | 7.9% | 1.31 | 13 | 38.5% | +157 | 0.008 | 43% |  |
 | buy_hold | +100.6% | +20.5% | 1.34 | 19.0% | 2.58 | 0 |  |  | 0.000 | 100% |  |
-| jev_only | +1.2% | +0.3% | 0.11 | 4.5% | 0.22 | 48 | 54.2% | +1 | 0.026 | 9% | 0.18 |
-| hmm_jev | -0.2% | -0.1% | -0.02 | 2.4% | -0.04 | 22 | 59.1% | -6 | 0.009 | 4% | 0.18 |
-| hmm_jev_conf | +6.7% | +1.8% | 1.07 | 1.8% | 2.07 | 26 | 61.5% | +25 | 0.015 | 4% | 0.07 |
+| classifier_only | +1.2% | +0.3% | 0.11 | 4.5% | 0.22 | 48 | 54.2% | +1 | 0.026 | 9% | 0.18 |
+| hmm_classifier | -0.2% | -0.1% | -0.02 | 2.4% | -0.04 | 22 | 59.1% | -6 | 0.009 | 4% | 0.18 |
+| hmm_classifier_conf | +6.7% | +1.8% | 1.07 | 1.8% | 2.07 | 26 | 61.5% | +25 | 0.015 | 4% | 0.07 |
 
 ## Gates (verbatim), on the system arm out of sample
 
@@ -33,9 +33,9 @@ Generated 2026-10-04T01:53+00:00. Out of sample 2023-01-03 to 2026-10-01 (940 ca
 |---|---|---|---|---|---|---|---|
 | hmm | FAIL | PASS | FAIL | FAIL | FAIL | FAIL | FAIL |
 | hmm_fixed | FAIL | PASS | FAIL | FAIL | FAIL | PASS | FAIL |
-| jev_only | FAIL | PASS | FAIL | FAIL | FAIL | FAIL | FAIL |
-| hmm_jev | FAIL | PASS | PASS | FAIL | FAIL | FAIL | FAIL |
-| hmm_jev_conf | FAIL | PASS | PASS | PASS | FAIL | FAIL | FAIL |
+| classifier_only | FAIL | PASS | FAIL | FAIL | FAIL | FAIL | FAIL |
+| hmm_classifier | FAIL | PASS | PASS | FAIL | FAIL | FAIL | FAIL |
+| hmm_classifier_conf | FAIL | PASS | PASS | PASS | FAIL | FAIL | FAIL |
 
 ## By state (out of sample): share, the fixed-cap arm's P&L while in the state, and the raw next-candle return
 

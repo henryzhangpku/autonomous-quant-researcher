@@ -31,7 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("gpu", help="Report the available NVIDIA research runtime.")
     subparsers.add_parser(
         "llm",
-        help="Show which proposer runtime (local GPU or DeepSeek) will be used, and why.",
+        help="Show which proposer runtime (local GPU or remote LLM) will be used, and why.",
     )
 
     for action, help_text in (
@@ -69,7 +69,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "local_server_listening": local_server_is_listening(
                     os.environ.get("AUTOQUANT_LOCAL_BASE_URL", "http://127.0.0.1:8080/v1")
                 ),
-                "switch_with": "AUTOQUANT_LAB_PROVIDER=auto|local|deepseek",
+                "switch_with": "AUTOQUANT_LAB_PROVIDER=auto|local|remote",
             }
         )
         return 0

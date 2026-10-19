@@ -1,9 +1,10 @@
-"""Candles from the qs-research data lake, as a clean OHLCV frame.
+"""Candles from the research data lake, as a clean OHLCV frame.
 
 The lake stores Alpaca bars as gzip CSV (ts, open, high, low, close, volume)
 under <lake>/bars/<SYMBOL>/<timeframe>.csv.gz, crypto pairs with '/' as '-'.
-Lake root: QS_DATALAKE_DIR, else the sibling qs-research checkout's
-data/datalake. Read-only; the lake is synced on the qs-research side.
+Lake root: the RESEARCH_DATALAKE_DIR environment variable (required; there is
+no default path). Read-only; the lake is synced by the upstream research
+service.
 """
 
 from __future__ import annotations
@@ -17,11 +18,10 @@ COLUMNS = ["ts", "open", "high", "low", "close", "volume"]
 
 
 def lake_root() -> Path:
-    env = os.environ.get("QS_DATALAKE_DIR")
+    env = os.environ.get("RESEARCH_DATALAKE_DIR")
     if env:
         return Path(env)
-    sibling = Path(__file__).resolve().parents[2].parent / "qs-research" / "data" / "datalake"
-    return sibling
+    raise FileNotFoundError("set RESEARCH_DATALAKE_DIR to the research data lake root")
 
 
 def bars_path(symbol: str, timeframe: str, root: Path | None = None) -> Path:

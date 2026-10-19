@@ -29,7 +29,7 @@ def _random_daily_tape(n: int = 1700, seed: int = 9) -> pd.DataFrame:
 def test_books_balance_and_a_driftless_tape_is_rejected(tmp_path: Path, monkeypatch):
     candles = _random_daily_tape()
     _write_lake(tmp_path, "TEST", "day", candles)
-    monkeypatch.setenv("QS_DATALAKE_DIR", str(tmp_path))
+    monkeypatch.setenv("RESEARCH_DATALAKE_DIR", str(tmp_path))
     res = bt.run_backtest("TEST", "day", fit_end="2019-01-01", val_end="2019-07-01", fee_bps=1.0, slip_bps=2.0, refit_days=120)
     assert res["oos_candles"] > 700
     bh = res["results"]["buy_hold"]

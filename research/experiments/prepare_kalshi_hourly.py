@@ -1,6 +1,6 @@
 """Freeze real Kalshi hourly-binary history for the four-rules verification.
 
-The Random Trader app runs Henry's four rules on Kalshi's hourly crypto
+The Random Trader app runs the owner's four rules on Kalshi's hourly crypto
 threshold ladders (KXBTCD, KXETHD). Unlike the SPX program, no pricing model
 is needed: Kalshi's public API serves per-minute yes bid/ask OHLC candles for
 settled markets plus the settlement result - the snapshot IS executable

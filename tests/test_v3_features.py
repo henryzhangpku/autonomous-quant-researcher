@@ -51,7 +51,7 @@ def common(family: str, key: str, event_time: str, *, available_at: str | None =
         "exchange_timezone": "America/New_York",
         "exchange_calendar": "XNYS",
         "redistribution_class": "private_derived_only",
-        "source_contract_version": "qs-cf-v1",
+        "source_contract_version": "flow-v1",
     }
 
 

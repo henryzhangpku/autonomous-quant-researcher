@@ -5,7 +5,7 @@ Written 2026-10-03 after the first full run on the research data lake.
 
 ## Verdict
 
-**No. On 60 weekends (2025-07-11 to 2026-09-25), Friday's CheddarFlow flow on
+**No. On 60 weekends (2025-07-11 to 2026-09-25), Friday's options flow (the flow data provider) on
 IBIT, the crypto-ETF basket, or ETHA does not predict the weekend BTC or ETH
 move.** Nothing in the 84-cell grid clears the Bonferroni bar (p < 0.001); the
 best raw p-values belong to the two *baselines*, not to any flow signal, and
@@ -24,7 +24,7 @@ and by Monday morning.
   third of Fridays had the worst Monday outcomes (BTC -52 bps, 45% up; IBIT
   gap -55 bps, 45% up) while the middle third had the best (+116 bps, 65% up).
   Not significant, but if anything the loud Friday call buying is a fade.
-- **CF's own day aggregate** (call share of session premium, its sentiment
+- **The provider's own day aggregate** (call share of session premium, its sentiment
   label) is flat: hit rates 45-53%, Spearman within +-0.10.
 - **The largest print of the day** is the only flow feature with a positive
   24h read (63% on BTC, 61% on ETH, Welch p 0.03 / 0.02) and it is **gone at
@@ -44,7 +44,7 @@ rule has to beat. None did.
 
 ## Why this is not the final word
 
-- **CheddarFlow's stored history is thin.** It starts in July 2025 for these
+- **The flow data provider's stored history is thin.** It starts in July 2025 for these
   names, and the median Friday has 12 IBIT prints; only from mid-2026 are there
   50-260 prints a day. ARKB has 4 prints in the whole window, GBTC 25, FBTC 49.
   The lake keeps every new day, so this re-runs for free as the sample grows.
@@ -58,7 +58,7 @@ rule has to beat. None did.
 ## This weekend (2026-10-02 to 2026-10-05), for the record
 
 Friday's IBIT flow was the most bullish print of the window: 134 prints,
-$16.8M premium, bull share +0.33, CF session call share +0.70, largest print
+$16.8M premium, bull share +0.33, provider session call share +0.70, largest print
 bullish, the production call = bullish. The history above says that tells us
 nothing about Sunday; BTC is +66 bps since Friday 16:00 ET as of Saturday
 17:00 UTC. The script scores this weekend automatically on the next run.

@@ -1,6 +1,6 @@
 # Off-exchange short volume (DPI) vs forward stock returns, full universe
 
-Generated 2026-10-04T00:58+00:00 from the research data lake (Quiver off-exchange history + Alpaca adjusted daily bars). Design in `study.py`.
+Generated 2026-10-04T00:58+00:00 from the research data lake (vendor off-exchange history + Alpaca adjusted daily bars). Design in `study.py`.
 
 Panel: **2,371,191** ticker-days over **1234** decision days (2021-01-12 to 2026-09-30), median **1758** names per day after the price/liquidity filter. Signals are lagged one trading day for publication.
 

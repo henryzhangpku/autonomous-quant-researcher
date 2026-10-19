@@ -9,7 +9,7 @@ Decision model, fixed for the family: the candidate observes features built
 strictly from bars up to and including session T and returns a position for
 session T+1. Payoff is the next session's open-to-close (default) or
 close-to-close return, minus costs. Equal-weight daily portfolio, identical
-gate framework to the CF universe family.
+gate framework to the options-flow universe family.
 """
 
 from __future__ import annotations

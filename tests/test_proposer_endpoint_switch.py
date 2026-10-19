@@ -1,4 +1,4 @@
-"""One switch between a local GPU model and DeepSeek, with a stated reason.
+"""One switch between a local GPU model and a remote LLM, with a stated reason.
 
 Autonomous Quant Researcher assumed a laptop running llama.cpp on an NVIDIA GPU. Moved to a box
 with neither, every mission failed at the proposer with a 401 against
@@ -22,12 +22,9 @@ LAB_VARS = (
     "AUTOQUANT_LAB_API_KEY",
     "AUTOQUANT_LOCAL_BASE_URL",
     "AUTOQUANT_LOCAL_MODEL",
-    "AUTOQUANT_DEEPSEEK_BASE_URL",
-    "AUTOQUANT_DEEPSEEK_MODEL",
-    "AUTOQUANT_DEEPSEEK_API_KEY",
-    "DEEPSEEK_API_KEY",
-    "DEEPSEEK_BASE_URL",
-    "DEEPSEEK_MODEL",
+    "LLM_API_KEY",
+    "LLM_BASE_URL",
+    "LLM_MODEL",
 )
 
 
@@ -51,11 +48,18 @@ def test_auto_prefers_a_local_server_when_one_is_listening() -> None:
     assert "127.0.0.1" in endpoint.base_url
 
 
-def test_auto_uses_deepseek_when_no_local_server_exists() -> None:
+def test_auto_uses_remote_when_no_local_server_exists(monkeypatch: pytest.MonkeyPatch) -> None:
     # The box this runs on today: no NVIDIA GPU, no llama-server.
+    monkeypatch.setenv("LLM_MODEL", "remote-model")
     endpoint = resolve_endpoint(probe=_down)
-    assert endpoint.provider == "deepseek"
-    assert endpoint.model == "deepseek-flash"
+    assert endpoint.provider == "remote"
+    assert endpoint.model == "remote-model"
+
+
+def test_remote_has_no_built_in_endpoint() -> None:
+    endpoint = resolve_endpoint(preference="remote", probe=_down)
+    assert endpoint.base_url == ""
+    assert "LLM_BASE_URL is not set" in endpoint.reason
 
 
 def test_explicit_local_is_honoured_when_available() -> None:
@@ -63,19 +67,19 @@ def test_explicit_local_is_honoured_when_available() -> None:
     assert endpoint.provider == "local"
 
 
-def test_explicit_local_falls_back_to_deepseek_and_says_so() -> None:
+def test_explicit_local_falls_back_to_remote_and_says_so() -> None:
     # Asking for local and getting nothing must not fail the mission — the
     # evaluator is identical either way, so the run still produces comparable
     # evidence. But the substitution has to be visible in the reason.
     endpoint = resolve_endpoint(preference="local", probe=_down)
-    assert endpoint.provider == "deepseek"
+    assert endpoint.provider == "remote"
     assert "fell back" in endpoint.reason
     assert "127.0.0.1" in endpoint.reason
 
 
-def test_explicit_deepseek_wins_even_with_a_local_server_up() -> None:
-    endpoint = resolve_endpoint(preference="deepseek", probe=_up)
-    assert endpoint.provider == "deepseek"
+def test_explicit_remote_wins_even_with_a_local_server_up() -> None:
+    endpoint = resolve_endpoint(preference="remote", probe=_up)
+    assert endpoint.provider == "remote"
 
 
 def test_an_explicit_base_url_still_overrides_everything(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -87,24 +91,24 @@ def test_an_explicit_base_url_still_overrides_everything(monkeypatch: pytest.Mon
     assert endpoint.base_url == "http://example.invalid/v1"
 
 
-def test_a_bare_deepseek_host_gets_the_v1_suffix(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Railway stores DEEPSEEK_BASE_URL as https://api.deepseek.com with no path.
-    monkeypatch.setenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
-    endpoint = resolve_endpoint(preference="deepseek", probe=_down)
-    assert endpoint.base_url == "https://api.deepseek.com/v1"
+def test_a_bare_remote_host_gets_the_v1_suffix(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Hosting platforms often store LLM_BASE_URL as a bare host with no path.
+    monkeypatch.setenv("LLM_BASE_URL", "https://llm.example.invalid")
+    endpoint = resolve_endpoint(preference="remote", probe=_down)
+    assert endpoint.base_url == "https://llm.example.invalid/v1"
 
 
-def test_deepseek_credentials_come_from_the_usual_names(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-test")
-    endpoint = resolve_endpoint(preference="deepseek", probe=_down)
+def test_remote_credentials_come_from_the_usual_names(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLM_API_KEY", "sk-test")
+    endpoint = resolve_endpoint(preference="remote", probe=_down)
     assert endpoint.api_key == "sk-test"
 
 
 def test_describe_never_leaks_the_key() -> None:
     endpoint = ProposerEndpoint(
-        provider="deepseek",
-        base_url="https://api.deepseek.com/v1",
-        model="deepseek-flash",
+        provider="remote",
+        base_url="https://llm.example.invalid/v1",
+        model="remote-model",
         api_key="sk-super-secret",
         reason="test",
     )

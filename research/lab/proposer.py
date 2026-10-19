@@ -70,11 +70,11 @@ class OpenAIProposer:
         # max_tokens caps reasoning AND output together, so a long mission
         # prompt consumed the entire budget on private reasoning and returned
         # EMPTY content with finish_reason='length'. Measured against the real
-        # spy-0dte mission on 2026-08-15 with deepseek-v4-flash: at 2500 the
+        # spy-0dte mission on 2026-08-15 with the configured model: at 2500 the
         # model spent all 2500 tokens reasoning and wrote 0 characters; at
         # 12000 it reasoned for 10430 and produced a 1146-character candidate.
         # Every attempt failed, and the message blamed an "empty" reply.
-        # The ceiling is 65536, not 16384: on 2026-08-15 deepseek-v4-flash hit
+        # The ceiling is 65536, not 16384: on 2026-08-15 the configured model hit
         # the 16384 budget on a real spy-0dte attempt and returned nothing, so
         # a cap at that value would forbid the setting that fixes it. Keeping
         # the validation, raising the roof.
@@ -90,7 +90,7 @@ class OpenAIProposer:
 
     # STRICT SCHEMA WHERE IT EXISTS, PLAIN JSON WHERE IT DOES NOT.
     #
-    # `json_schema` is an OpenAI extension. DeepSeek — and most other
+    # `json_schema` is an OpenAI extension. Many hosted providers — and most other
     # OpenAI-compatible endpoints — reject it outright ("This response_format
     # type is unavailable now"), which failed all 50 attempts of the first real
     # mission on 2026-08-15 without a single candidate being evaluated.
