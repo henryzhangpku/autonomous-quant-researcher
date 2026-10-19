@@ -36,8 +36,8 @@ import pandas as pd
 import requests
 
 QUESTION_SET_VERSION = "hmm-regime/classifier-gate/1"
-# The classifier model id, from CLASSIFIER_MODEL (the endpoint's own default when unset).
-MODEL = os.environ.get("CLASSIFIER_MODEL") or "latest"
+# The classifier model id, from CLASSIFIER_MODEL (required: the endpoint has no default model).
+MODEL = os.environ.get("CLASSIFIER_MODEL") or None
 CONF_MIN = 0.80
 QUESTIONS = {
     "regime": {"type": "choice", "instructions": "What market regime does this hourly/daily state describe for the next few candles?",
@@ -126,6 +126,8 @@ class ClassifierGate:
             raise RuntimeError("no classifier URL (set CLASSIFIER_URL)")
         if not key:
             raise RuntimeError("no classifier key (set CLASSIFIER_API_KEY)")
+        if not body.get("model"):
+            raise RuntimeError("no classifier model (set CLASSIFIER_MODEL)")
         wait = self.min_interval - (time.monotonic() - self._last)
         if wait > 0:
             time.sleep(wait)

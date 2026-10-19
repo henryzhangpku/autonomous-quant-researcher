@@ -288,7 +288,7 @@ none has a built-in default endpoint:
 | `RESEARCH_DATALAKE_DIR` | root of the research data lake (bars and flow exports read by `research/hmm/` and `research/providers/datalake.py`) |
 | `CLASSIFIER_URL` | the fast text classifier endpoint used by the HMM regime size gate (`research/hmm/classifier_gate.py`) |
 | `CLASSIFIER_API_KEY` | bearer key for that endpoint (replaces the former vendor-named key variable) |
-| `CLASSIFIER_MODEL` | model id sent to that endpoint (default `latest`) |
+| `CLASSIFIER_MODEL` | model id sent to that endpoint (required; the endpoint has no default) |
 | `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY` | the remote proposer LLM (configurable) used when `AUTOQUANT_LAB_PROVIDER` is `remote`, or as the fallback when no local server answers |
 
 **Run a mission.** A mission is a natural-language statement plus a frozen
