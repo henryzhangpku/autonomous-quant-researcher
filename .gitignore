@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Secrets — never commit
+.env
+.env.*
+*.pem
+*.key
+
+# Runtime research state (ledgers, snapshots, captured data) is host-local
+.research/
+research/data/*.csv.gz
+research/data/*.jsonl.gz
+research/data/*.parquet
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Demo build output (deployed by the Pages workflow)
+_site/
+research/missions/*/fits/*/filtered.csv.gz
+research/hmm/artifacts/
+
+# Pre-registration ledgers are committed evidence; their lock file is not
+research/missions/*/.ledger.lock
+
+# Daily price table is ~1 MB; rebuilt by research/experiments/prepare_gpu_outcomes.py, pinned by hash in prices_manifest.json
+research/data/gpu_outcomes/prices_daily.csv

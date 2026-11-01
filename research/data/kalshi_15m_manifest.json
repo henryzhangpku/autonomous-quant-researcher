@@ -1,0 +1,28 @@
+{
+  "base": "https://api.elections.kalshi.com/trade-api/v2",
+  "data_sha256": "017647db80f0d55d1a7c535b7adf09d6b12e0a9313d4df6a9e06664ee8327082",
+  "dropped": {
+    "fetch_error": 0,
+    "no_candles": 12
+  },
+  "first_close": "2026-07-09T05:30:00Z",
+  "last_close": "2026-08-23T05:30:00Z",
+  "limitations": [
+    "candle closes proxy executable prices; intraminute book moves unseen",
+    "fees not in the data; evaluate with the Kalshi taker formula 0.07*P*(1-P)",
+    "window is recent crypto regime only"
+  ],
+  "listed_per_series": {
+    "KXBTC15M": 4256,
+    "KXETH15M": 4258
+  },
+  "markets": 8502,
+  "prepared_at_utc": "2026-08-23T05:55:58.234082+00:00",
+  "provider": "kalshi-public",
+  "requested_days": 45,
+  "series": [
+    "KXBTC15M",
+    "KXETH15M"
+  ],
+  "window_minutes": 20
+}

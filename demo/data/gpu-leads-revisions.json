@@ -1,0 +1,1323 @@
+{
+ "as_of_session": "2026-10-30",
+ "campaign_1": {
+  "campaign": "campaign_1",
+  "reason": "data requirements are not met",
+  "refused": true,
+  "unmet": [
+   {
+    "available": 0,
+    "description": "Daily H100 rental price history for the discovery and validation years",
+    "detail": "not licensed: no credential configured",
+    "key": "gpu_rental_history_h100",
+    "required": 773,
+    "source": "licensed vendor history",
+    "state": "not_licensed",
+    "unit": "sessions"
+   },
+   {
+    "available": 0,
+    "description": "Point-in-time consensus FY+1 revenue for NVDA, AMD, AVGO, CRWV, NBIS, every decision week with a closed 8-week window",
+    "detail": "consensus_primary: not licensed: no credential configured; consensus_secondary: not licensed: no credential configured",
+    "key": "consensus_revenue_fy1",
+    "required": 145,
+    "source": "a licensed consensus-estimate provider",
+    "state": "not_licensed",
+    "unit": "weeks"
+   },
+   {
+    "available": 0,
+    "description": "Point-in-time consensus FY+1 capex for MSFT, GOOGL, AMZN, META, every decision week with a closed 8-week window",
+    "detail": "consensus_primary: not licensed: no credential configured; consensus_secondary: not licensed: no credential configured",
+    "key": "consensus_capex_fy1",
+    "required": 145,
+    "source": "a licensed consensus-estimate provider",
+    "state": "not_licensed",
+    "unit": "weeks"
+   },
+   {
+    "available": 0,
+    "description": "Holdout weeks (after the freeze) with a live H100 signal from the public index and a closed 8-week window",
+    "detail": "0 holdout weeks so far with a live signal and a closed window",
+    "key": "index_h100_holdout",
+    "required": 52,
+    "source": "public GPU rental price index",
+    "state": "missing",
+    "unit": "weeks"
+   },
+   {
+    "available": 0,
+    "description": "H200 live signal in the same holdout weeks (independent check)",
+    "detail": "0 holdout weeks so far",
+    "key": "index_h200_holdout",
+    "required": 47,
+    "source": "public GPU rental price index",
+    "state": "missing",
+    "unit": "weeks"
+   },
+   {
+    "available": 0,
+    "description": "B200 live signal in the same holdout weeks (independent check)",
+    "detail": "0 holdout weeks so far",
+    "key": "index_b200_holdout",
+    "required": 47,
+    "source": "public GPU rental price index",
+    "state": "missing",
+    "unit": "weeks"
+   }
+  ]
+ },
+ "campaign_2": {
+  "campaign": "campaign_2",
+  "reason": "sealed until campaign 1 passes",
+  "refused": true,
+  "unmet": [
+   {
+    "available": 0,
+    "description": "Campaign 1 verdict is PASS",
+    "detail": "campaign 2 is sealed until campaign 1 passes",
+    "key": "campaign_1_pass",
+    "required": 1,
+    "source": "this ledger",
+    "state": "missing",
+    "unit": "verdicts"
+   },
+   {
+    "available": 0,
+    "description": "Weekly total-return closes for the basket and SPY",
+    "detail": "not staged; the provider exists in this repository and needs Alpaca keys",
+    "key": "campaign_2_total_return_closes",
+    "required": 156,
+    "source": "Alpaca daily bars (research/providers/alpaca.py)",
+    "state": "missing",
+    "unit": "weeks"
+   }
+  ]
+ },
+ "generated_at": "2026-11-01T01:19:32+00:00",
+ "mission": "gpu-leads-revisions",
+ "preregistration": {
+  "code_sha256": {
+   "research/prereg/gates.py": "57b96909adc12132134bf90da56f0557ab3603525230e6655cd4d037ec148f4a",
+   "research/prereg/gpu_campaign.py": "55a846cd708b4abc1f4adb5522c98390cd176892dfc4bf97d575ea91cf8a8398",
+   "research/prereg/gpu_signal.py": "56cfdc27fa20f15eadfa6db925a594cdfa3dbc9c930b4f0c9420799811d0e6ce",
+   "research/prereg/xnys.py": "6770f2969a542e463318a7e052d701bb989ab204d9fc0b552f015010ee7a5942"
+  },
+  "document_sha256": "e675e4ed55e3fa011ba337528d209c5791f3211170583aa5cd70f5c53819aaad",
+  "frozen_at": "2026-10-08T21:07:53.502454+00:00",
+  "ledger_event_hash": "43c007b35795bcc7319a182caf2d1233cab03da6c5ebbd934076fe887f974073",
+  "spec_sha256": "d1748649db654a7bbf7389a26adc4cc53a96fd44126697bfb19f550e053b48e5"
+ },
+ "providers": [
+  {
+   "available": false,
+   "client_bundled": false,
+   "credential_env": "CONSENSUS_PRIMARY_API_KEY",
+   "credential_present": false,
+   "product": "point-in-time consensus estimates (primary licensed adapter)",
+   "provider": "consensus_primary",
+   "reason": "not licensed: no credential configured",
+   "schema": [
+    [
+     "symbol",
+     "str"
+    ],
+    [
+     "as_of",
+     "date"
+    ],
+    [
+     "measure",
+     "EstimateMeasure"
+    ],
+    [
+     "fiscal_period",
+     "FiscalPeriod"
+    ],
+    [
+     "fiscal_year_end",
+     "date"
+    ],
+    [
+     "consensus_mean",
+     "float"
+    ],
+    [
+     "contributor_count",
+     "int"
+    ],
+    [
+     "currency",
+     "str"
+    ],
+    [
+     "provider",
+     "str"
+    ],
+    [
+     "provider_record_id",
+     "str"
+    ]
+   ]
+  },
+  {
+   "available": false,
+   "client_bundled": false,
+   "credential_env": "CONSENSUS_SECONDARY_API_KEY",
+   "credential_present": false,
+   "product": "point-in-time consensus estimates (independent licensed adapter)",
+   "provider": "consensus_secondary",
+   "reason": "not licensed: no credential configured",
+   "schema": [
+    [
+     "symbol",
+     "str"
+    ],
+    [
+     "as_of",
+     "date"
+    ],
+    [
+     "measure",
+     "EstimateMeasure"
+    ],
+    [
+     "fiscal_period",
+     "FiscalPeriod"
+    ],
+    [
+     "fiscal_year_end",
+     "date"
+    ],
+    [
+     "consensus_mean",
+     "float"
+    ],
+    [
+     "contributor_count",
+     "int"
+    ],
+    [
+     "currency",
+     "str"
+    ],
+    [
+     "provider",
+     "str"
+    ],
+    [
+     "provider_record_id",
+     "str"
+    ]
+   ]
+  },
+  {
+   "available": false,
+   "client_bundled": false,
+   "credential_env": "GPU_RENTAL_HISTORY_API_KEY",
+   "credential_present": false,
+   "product": "licensed multi-year daily GPU rental price history",
+   "provider": "gpu_rental_history",
+   "reason": "not licensed: no credential configured",
+   "schema": [
+    [
+     "gpu",
+     "str"
+    ],
+    [
+     "day",
+     "date"
+    ],
+    [
+     "usd_per_gpu_hour",
+     "float"
+    ],
+    [
+     "methodology",
+     "str"
+    ],
+    [
+     "provider",
+     "str"
+    ],
+    [
+     "provider_record_id",
+     "str"
+    ]
+   ]
+  }
+ ],
+ "proxy": {
+  "campaign_1": {
+   "campaign": "proxy_campaign_1",
+   "reason": "data requirements are not met",
+   "refused": true,
+   "unmet": [
+    {
+     "available": 0,
+     "description": "Monthly H100 rental list-price medians, 2023-03 to 2026-06, at least 3 rate cards each",
+     "detail": "not configured: set GPU_INDEX_BACKFILL or pass a path",
+     "key": "list_price_backfill",
+     "required": 36,
+     "source": "gpu-index list-price back-series (GPU_INDEX_BACKFILL)",
+     "state": "missing",
+     "unit": "months"
+    },
+    {
+     "available": 0,
+     "description": "Filed-date-stamped XBRL capex for MSFT, AMZN, GOOGL, META, ORCL: next-quarter acceleration computable at each discovery and validation decision",
+     "detail": "not configured: set PROXY_XBRL_FACTS or pass a path",
+     "key": "xbrl_hyperscaler_capex",
+     "required": 34,
+     "source": "SEC XBRL facts (PROXY_XBRL_FACTS)",
+     "state": "missing",
+     "unit": "decisions"
+    },
+    {
+     "available": 0,
+     "description": "Filed-date-stamped XBRL revenue for NVDA, AMD, AVGO: next-quarter acceleration computable at each discovery and validation decision",
+     "detail": "not configured: set PROXY_XBRL_FACTS or pass a path",
+     "key": "xbrl_supplier_revenue",
+     "required": 34,
+     "source": "SEC XBRL facts (PROXY_XBRL_FACTS)",
+     "state": "missing",
+     "unit": "decisions"
+    },
+    {
+     "available": 0,
+     "description": "Holdout months (after the freeze) with a live monthly H100 signal from the public index and a matured next-quarter outcome",
+     "detail": "0 holdout months so far with a live monthly signal",
+     "key": "proxy_index_h100_holdout",
+     "required": 12,
+     "source": "public GPU rental price index",
+     "state": "missing",
+     "unit": "months"
+    },
+    {
+     "available": 0,
+     "description": "H200 monthly signal live in the same holdout months (independent check)",
+     "detail": "0 holdout months so far with a live monthly signal",
+     "key": "proxy_index_h200_holdout",
+     "required": 11,
+     "source": "public GPU rental price index",
+     "state": "missing",
+     "unit": "months"
+    },
+    {
+     "available": 0,
+     "description": "B200 monthly signal live in the same holdout months (independent check)",
+     "detail": "0 holdout months so far with a live monthly signal",
+     "key": "proxy_index_b200_holdout",
+     "required": 11,
+     "source": "public GPU rental price index",
+     "state": "missing",
+     "unit": "months"
+    }
+   ]
+  },
+  "campaign_2": {
+   "campaign": "proxy_campaign_2",
+   "reason": "sealed until proxy campaign 1 passes",
+   "refused": true,
+   "unmet": [
+    {
+     "available": 0,
+     "description": "Proxy campaign 1 verdict is PASS",
+     "detail": "proxy campaign 2 is sealed until proxy campaign 1 passes",
+     "key": "proxy_campaign_1_pass",
+     "required": 1,
+     "source": "this ledger",
+     "state": "missing",
+     "unit": "verdicts"
+    },
+    {
+     "available": 0,
+     "description": "Daily adjusted closes for the basket and SMH, every monthly decision with a closed window",
+     "detail": "not configured: set PROXY_PRICES or pass a path",
+     "key": "proxy_adjusted_closes",
+     "required": 36,
+     "source": "adjusted closes (PROXY_PRICES)",
+     "state": "missing",
+     "unit": "decisions"
+    }
+   ]
+  },
+  "spec": {
+   "data_requirements": {
+    "adjusted_closes": {
+     "columns": [
+      "symbol",
+      "day",
+      "adj_close"
+     ],
+     "file": "PROXY_PRICES",
+     "min_decision_coverage": 0.9,
+     "sealed_until": "proxy campaign 1 PASS",
+     "symbols_include_benchmarks": [
+      "SMH",
+      "QQQ",
+      "SPY"
+     ]
+    },
+    "index_holdout": {
+     "checks_min_share": 0.9,
+     "holdout_months_with_live_signal_and_matured_outcome": 12,
+     "source": "public index tape"
+    },
+    "list_price_backfill": {
+     "columns": [
+      "gpu",
+      "month",
+      "median_usd_per_gpu_hour",
+      "rate_card_count",
+      "price_type"
+     ],
+     "file": "GPU_INDEX_BACKFILL (a CSV in gpu-index, separate from the published tape)",
+     "h100_months": {
+      "from": "2023-03",
+      "to": "2026-06"
+     },
+     "min_month_coverage": 0.9
+    },
+    "xbrl_facts": {
+     "columns": [
+      "symbol",
+      "concept",
+      "period_start",
+      "period_end",
+      "value",
+      "filed",
+      "accession",
+      "xbrl_tag"
+     ],
+     "file": "PROXY_XBRL_FACTS",
+     "min_decision_coverage": 0.9
+    }
+   },
+   "decision_rule": [
+    "Stages run in order; a failed stage ends the campaign with FAIL, a stage below its floor with UNTESTABLE.",
+    "Proxy campaign 1 PASS requires every gate and both single-outcome checks in discovery, validation and holdout, and both the H200 and B200 checks in the holdout.",
+    "Proxy campaign 2 is evaluated only after a proxy campaign 1 PASS, with the same stages, gates, the always-long baseline gate and the three confirmations; its holdout also requires both checks.",
+    "A proxy PASS is not a primary PASS and is never reported as one. A proxy FAIL does not judge the primary track.",
+    "Each proxy campaign is opened once; the receipt records the content hash of every input file before evaluation reads it.",
+    "Nothing here changes after this freeze. A changed proxy is a new mission."
+   ],
+   "frozen_on": "2026-10-08",
+   "gates": {
+    "below_floor": "UNTESTABLE, never refuted",
+    "every_stage": [
+     "mean monthly capture positive (after base costs where traded)",
+     "positive in the first half and in the second half of the stage's months",
+     "positive with the single best month removed",
+     "5% lower bound of a 3-month block bootstrap of the mean positive (2000 resamples, seed from the proxy pre-registration hash)",
+     "positive at twice the base trading cost (traded outcomes only)"
+    ],
+    "holdout_checks": "the same capture with the H200 signal and with the B200 signal must each have a positive mean",
+    "sample_floor": {
+     "min_months": {
+      "discovery": 12,
+      "holdout": 12,
+      "validation": 12
+     },
+     "min_state_share": 0.2
+    }
+   },
+   "hypothesis": "When the 3-month change in the monthly H100 rental list-price median is positive, the next reported quarter shows faster year-on-year growth than the last reported quarter in hyperscaler capex and in NVDA, AMD and AVGO revenue, by more than the running average acceleration, and by less when it is negative. Only if that holds: the basket's forward returns beat SMH.",
+   "mission": "gpu-leads-revisions",
+   "proxy_campaign_1": {
+    "acceleration": "growth of the next quarter first filed after the decision minus growth of the last quarter filed before it; the year-ago base of the next quarter must be known at the decision",
+    "bootstrap_block_months": 3,
+    "both_required": "the capex capture alone and the revenue capture alone must each have a positive mean in every stage",
+    "capture": "position * (A - mean of every A already matured at the decision); at least 3 matured A are required. The stage series is the mean of the capex capture and the revenue capture on months where both exist.",
+    "discrete_quarter": "a directly reported 80-100 day value, else the fiscal year-to-date value minus the prior year-to-date value with the same start; the latest filing on or before the as-of date wins",
+    "growth": "log(quarter / the quarter ending 365 days earlier, within 10 days)",
+    "outcomes": {
+     "hyperscaler_capex": {
+      "basket": [
+       "MSFT",
+       "AMZN",
+       "GOOGL",
+       "META",
+       "ORCL"
+      ],
+      "concept": "capex",
+      "min_names": 3,
+      "xbrl_elements": "PaymentsToAcquirePropertyPlantAndEquipment; for AMZN PaymentsToAcquireProductiveAssets"
+     },
+     "supplier_revenue": {
+      "basket": [
+       "NVDA",
+       "AMD",
+       "AVGO"
+      ],
+      "concept": "revenue",
+      "min_names": 3,
+      "xbrl_elements": "RevenueFromContractWithCustomerExcludingAssessedTax, else Revenues"
+     }
+    },
+    "point_in_time": "only XBRL facts with a filing date before the decision session are known at the decision; the outcome matures on the filing date of the next quarter",
+    "question": "Does the GPU signal lead the next reported quarter's acceleration in hyperscaler capex growth and in NVDA, AMD and AVGO revenue growth?",
+    "reported_only": [
+     "NVDA Data Center segment revenue",
+     "CRWV and NBIS revenue"
+    ],
+    "traded": false
+   },
+   "proxy_campaign_2": {
+    "base_cost_bps_per_side": 5,
+    "basket": [
+     "NVDA",
+     "AMD",
+     "AVGO",
+     "TSM",
+     "MU",
+     "SMCI",
+     "ORCL",
+     "MSFT",
+     "AMZN",
+     "GOOGL",
+     "META",
+     "CRWV",
+     "NBIS"
+    ],
+    "bootstrap_block_months": 3,
+    "capture": "position * Y - cost; cost = cost_bps * |position - previous position| * 2 legs / 10000; a month without a signal is flat",
+    "confirmation_rule": "position * excess return must have a positive mean in every stage (sign only)",
+    "confirmations": [
+     {
+      "benchmark": "QQQ",
+      "months": 1
+     },
+     {
+      "benchmark": "SMH",
+      "months": 3
+     },
+     {
+      "benchmark": "QQQ",
+      "months": 3
+     }
+    ],
+    "elevated_cost_bps_per_side": 10,
+    "extra_gate": "mean capture after base costs exceeds the mean of always holding the basket against SMH",
+    "min_names": 8,
+    "prices": "daily adjusted closes; names without a close at both ends of a window are left out of that window",
+    "primary": {
+     "benchmark": "SMH",
+     "months": 1
+    },
+    "question": "Does the GPU signal lead forward returns of an equal-weight AI-infrastructure basket?",
+    "runs_only_if": "proxy campaign 1 verdict is PASS; otherwise sealed and never evaluated",
+    "traded": true
+   },
+   "relation_to_primary": "A second, weaker track chained after the primary pre-registration in the same ledger. It does not replace, amend or relax the primary track, whose outcome (paid consensus revisions) remains the primary campaign 1 outcome and remains unavailable. Each track is judged once and separately.",
+   "schema": "preregistration/1",
+   "signal": {
+    "checks": [
+     "H200",
+     "B200"
+    ],
+    "decision_grid": "the first XNYS session of each calendar month",
+    "definition": "log(M_(m-1) / M_(m-4)) at the first session of month m, where M is the monthly value for a completed month",
+    "position": "+1 if the change is above zero, -1 if below; a month without both values, or with no change, is not evaluated",
+    "primary": "H100",
+    "sources": {
+     "checks": "H200 and B200 from the public index tape, holdout only",
+     "discovery_and_validation": "a reconstructed monthly H100 rental LIST-PRICE median from archived public rate cards, a separate file in gpu-index; a month counts only with price_type=list_price and at least 3 rate cards",
+     "holdout": "the mean of the public index's published H100 session fixings in the month, read point-in-time at 14:30 UTC on the decision session; a month counts only if 90% of its sessions have a fixing, and the four months of a window must share one methodology version"
+    }
+   },
+   "stages": {
+    "discovery": {
+     "end": "2024-12-31",
+     "start": "2023-07-01"
+    },
+    "embargo": {
+     "end": "2026-10-08",
+     "note": "a discovery or validation decision counts only if its outcome window closed on or before 2026-10-08",
+     "start": "2026-08-01"
+    },
+    "holdout": {
+     "closes_after_evaluable_months": 12,
+     "start": "2026-10-09"
+    },
+    "validation": {
+     "end": "2026-07-31",
+     "start": "2025-01-01"
+    }
+   },
+   "track": "proxy",
+   "what_this_cannot_say": "A proxy PASS would say that a list-price signal carried information about the next quarter's reported growth acceleration for these names over these dates. It would be weaker evidence than the primary track: list prices are not transactions, quarterly outcomes are few and overlapping, and the pre-freeze history is public. It is not a trading signal. Research only; not investment advice.",
+   "why_weaker": [
+    "The discovery and validation signal is a reconstructed monthly median of archived public rate cards: list prices, not transactions, and not the public index's methodology.",
+    "Reported quarterly results move four times a year, so the outcome series is short and heavily overlapping; consensus revisions would move with every analyst update.",
+    "XBRL facts, prices and archived rate cards for 2023 to 2026 are public. This repository had not read them when this was frozen, but they are not unknowable. Only the holdout, which begins after the freeze, is untouched by construction."
+   ]
+  },
+  "track": {
+   "code_sha256": {
+    "research/prereg/gates.py": "57b96909adc12132134bf90da56f0557ab3603525230e6655cd4d037ec148f4a",
+    "research/prereg/gpu_campaign.py": "55a846cd708b4abc1f4adb5522c98390cd176892dfc4bf97d575ea91cf8a8398",
+    "research/prereg/gpu_signal.py": "56cfdc27fa20f15eadfa6db925a594cdfa3dbc9c930b4f0c9420799811d0e6ce",
+    "research/prereg/proxy_campaign.py": "1402708598966efc635374285622bcd93c44918378548b0b6bc91c587edcd4b9",
+    "research/prereg/xnys.py": "6770f2969a542e463318a7e052d701bb989ab204d9fc0b552f015010ee7a5942"
+   },
+   "document_sha256": "08d2cf270197e574e66ccc75568119fba1a4334ca37dbe10e95d735ed97e7234",
+   "frozen_at": "2026-10-08T21:31:34.399689+00:00",
+   "ledger_event_hash": "e39fe08f22d660ed0814ddede80c7f13b367a77aa74810c659acb96d062196e7",
+   "spec_sha256": "491a9ba659a4bbc8bd0d3e676c1714dc2cc226603ddf0ae8b11a24a8b9704142"
+  }
+ },
+ "series": {
+  "B200": {
+   "points": [
+    [
+     "2026-08-27",
+     5.937689,
+     "1.0.0"
+    ],
+    [
+     "2026-08-28",
+     5.990211,
+     "1.0.0"
+    ],
+    [
+     "2026-08-31",
+     5.990753,
+     "1.0.0"
+    ],
+    [
+     "2026-09-01",
+     5.811752,
+     "1.0.0"
+    ],
+    [
+     "2026-09-02",
+     5.486858,
+     "1.0.0"
+    ],
+    [
+     "2026-09-03",
+     6.104239,
+     "1.0.0"
+    ],
+    [
+     "2026-09-04",
+     5.675647,
+     "1.0.0"
+    ],
+    [
+     "2026-09-08",
+     6.31622,
+     "1.0.0"
+    ],
+    [
+     "2026-09-09",
+     6.284394,
+     "1.0.0"
+    ],
+    [
+     "2026-09-10",
+     6.206849,
+     "1.0.0"
+    ],
+    [
+     "2026-09-11",
+     6.261963,
+     "1.0.0"
+    ],
+    [
+     "2026-09-14",
+     5.782101,
+     "1.0.0"
+    ],
+    [
+     "2026-09-15",
+     6.61033,
+     "1.0.0"
+    ],
+    [
+     "2026-09-16",
+     6.377528,
+     "1.0.0"
+    ],
+    [
+     "2026-09-17",
+     5.706587,
+     "1.1.0"
+    ],
+    [
+     "2026-09-28",
+     6.338772,
+     "1.1.0"
+    ],
+    [
+     "2026-09-29",
+     6.641554,
+     "1.1.0"
+    ],
+    [
+     "2026-09-30",
+     6.601386,
+     "1.1.0"
+    ],
+    [
+     "2026-10-01",
+     6.535019,
+     "1.1.0"
+    ],
+    [
+     "2026-10-02",
+     5.868287,
+     "1.1.0"
+    ],
+    [
+     "2026-10-05",
+     6.555599,
+     "1.1.0"
+    ],
+    [
+     "2026-10-06",
+     6.7225,
+     "1.1.0"
+    ],
+    [
+     "2026-10-07",
+     6.556237,
+     "1.1.0"
+    ],
+    [
+     "2026-10-08",
+     6.662562,
+     "1.1.0"
+    ],
+    [
+     "2026-10-09",
+     6.716186,
+     "1.2.0"
+    ],
+    [
+     "2026-10-12",
+     6.754911,
+     "1.2.0"
+    ],
+    [
+     "2026-10-13",
+     6.124713,
+     "1.2.0"
+    ],
+    [
+     "2026-10-14",
+     6.139903,
+     "1.2.0"
+    ],
+    [
+     "2026-10-15",
+     6.155093,
+     "1.2.0"
+    ],
+    [
+     "2026-10-16",
+     7.170594,
+     "1.2.0"
+    ],
+    [
+     "2026-10-19",
+     7.229498,
+     "1.2.0"
+    ],
+    [
+     "2026-10-20",
+     6.202133,
+     "1.2.0"
+    ],
+    [
+     "2026-10-21",
+     7.03836,
+     "1.2.0"
+    ],
+    [
+     "2026-10-22",
+     7.835935,
+     "1.2.0"
+    ]
+   ],
+   "signal": {
+    "earliest_live_session": null,
+    "history_sessions": 16,
+    "latest_fixing": "2026-10-22",
+    "message": "latest published fixing is too old to sign a signal",
+    "methodology_version": "1.2.0",
+    "required_sessions": 64,
+    "status": "stale",
+    "value": null,
+    "window_coverage": null
+   }
+  },
+  "H100": {
+   "points": [
+    [
+     "2026-08-27",
+     3.589724,
+     "1.0.0"
+    ],
+    [
+     "2026-08-28",
+     3.089724,
+     "1.0.0"
+    ],
+    [
+     "2026-08-31",
+     3.118683,
+     "1.0.0"
+    ],
+    [
+     "2026-09-01",
+     3.106849,
+     "1.0.0"
+    ],
+    [
+     "2026-09-02",
+     3.067998,
+     "1.0.0"
+    ],
+    [
+     "2026-09-03",
+     3.174151,
+     "1.0.0"
+    ],
+    [
+     "2026-09-04",
+     3.066081,
+     "1.0.0"
+    ],
+    [
+     "2026-09-08",
+     3.161481,
+     "1.0.0"
+    ],
+    [
+     "2026-09-09",
+     3.126614,
+     "1.0.0"
+    ],
+    [
+     "2026-09-10",
+     3.109303,
+     "1.0.0"
+    ],
+    [
+     "2026-09-11",
+     2.969993,
+     "1.0.0"
+    ],
+    [
+     "2026-09-14",
+     3.240112,
+     "1.0.0"
+    ],
+    [
+     "2026-09-15",
+     3.02159,
+     "1.0.0"
+    ],
+    [
+     "2026-09-16",
+     3.339435,
+     "1.0.0"
+    ],
+    [
+     "2026-09-17",
+     3.044905,
+     "1.1.0"
+    ],
+    [
+     "2026-09-28",
+     3.187948,
+     "1.1.0"
+    ],
+    [
+     "2026-09-29",
+     3.142124,
+     "1.1.0"
+    ],
+    [
+     "2026-09-30",
+     3.431514,
+     "1.1.0"
+    ],
+    [
+     "2026-10-01",
+     4.103126,
+     "1.1.0"
+    ],
+    [
+     "2026-10-02",
+     3.943083,
+     "1.1.0"
+    ],
+    [
+     "2026-10-05",
+     3.63719,
+     "1.1.0"
+    ],
+    [
+     "2026-10-06",
+     4.05943,
+     "1.1.0"
+    ],
+    [
+     "2026-10-07",
+     4.081375,
+     "1.1.0"
+    ],
+    [
+     "2026-10-08",
+     3.905887,
+     "1.1.0"
+    ],
+    [
+     "2026-10-09",
+     3.378427,
+     "1.2.0"
+    ],
+    [
+     "2026-10-12",
+     3.201598,
+     "1.2.0"
+    ],
+    [
+     "2026-10-13",
+     3.255573,
+     "1.2.0"
+    ],
+    [
+     "2026-10-14",
+     3.259459,
+     "1.2.0"
+    ],
+    [
+     "2026-10-15",
+     3.277964,
+     "1.2.0"
+    ],
+    [
+     "2026-10-16",
+     3.281706,
+     "1.2.0"
+    ],
+    [
+     "2026-10-19",
+     3.229338,
+     "1.2.0"
+    ],
+    [
+     "2026-10-20",
+     3.251295,
+     "1.2.0"
+    ],
+    [
+     "2026-10-21",
+     3.255214,
+     "1.2.0"
+    ],
+    [
+     "2026-10-22",
+     3.289918,
+     "1.2.0"
+    ]
+   ],
+   "signal": {
+    "earliest_live_session": null,
+    "history_sessions": 16,
+    "latest_fixing": "2026-10-22",
+    "message": "latest published fixing is too old to sign a signal",
+    "methodology_version": "1.2.0",
+    "required_sessions": 64,
+    "status": "stale",
+    "value": null,
+    "window_coverage": null
+   }
+  },
+  "H200": {
+   "points": [
+    [
+     "2026-08-27",
+     3.599343,
+     "1.0.0"
+    ],
+    [
+     "2026-08-28",
+     3.7604,
+     "1.0.0"
+    ],
+    [
+     "2026-08-31",
+     3.777688,
+     "1.0.0"
+    ],
+    [
+     "2026-09-01",
+     3.777688,
+     "1.0.0"
+    ],
+    [
+     "2026-09-02",
+     3.806067,
+     "1.0.0"
+    ],
+    [
+     "2026-09-03",
+     3.817159,
+     "1.0.0"
+    ],
+    [
+     "2026-09-04",
+     3.817159,
+     "1.0.0"
+    ],
+    [
+     "2026-09-08",
+     3.40049,
+     "1.0.0"
+    ],
+    [
+     "2026-09-09",
+     3.873365,
+     "1.0.0"
+    ],
+    [
+     "2026-09-10",
+     3.117669,
+     "1.0.0"
+    ],
+    [
+     "2026-09-11",
+     3.479492,
+     "1.0.0"
+    ],
+    [
+     "2026-09-14",
+     3.148162,
+     "1.0.0"
+    ],
+    [
+     "2026-09-15",
+     3.439452,
+     "1.0.0"
+    ],
+    [
+     "2026-09-16",
+     3.492133,
+     "1.0.0"
+    ],
+    [
+     "2026-09-17",
+     3.453123,
+     "1.1.0"
+    ],
+    [
+     "2026-09-28",
+     3.563365,
+     "1.1.0"
+    ],
+    [
+     "2026-09-29",
+     3.547132,
+     "1.1.0"
+    ],
+    [
+     "2026-09-30",
+     3.51826,
+     "1.1.0"
+    ],
+    [
+     "2026-10-01",
+     3.52586,
+     "1.1.0"
+    ],
+    [
+     "2026-10-02",
+     3.53354,
+     "1.1.0"
+    ],
+    [
+     "2026-10-05",
+     3.681868,
+     "1.1.0"
+    ],
+    [
+     "2026-10-06",
+     3.649888,
+     "1.1.0"
+    ],
+    [
+     "2026-10-07",
+     3.56514,
+     "1.1.0"
+    ],
+    [
+     "2026-10-08",
+     4.01774,
+     "1.1.0"
+    ],
+    [
+     "2026-10-09",
+     3.854796,
+     "1.2.0"
+    ],
+    [
+     "2026-10-12",
+     3.884466,
+     "1.2.0"
+    ],
+    [
+     "2026-10-13",
+     3.894361,
+     "1.2.0"
+    ],
+    [
+     "2026-10-14",
+     3.904976,
+     "1.2.0"
+    ],
+    [
+     "2026-10-15",
+     3.915346,
+     "1.2.0"
+    ],
+    [
+     "2026-10-16",
+     3.925486,
+     "1.2.0"
+    ],
+    [
+     "2026-10-19",
+     3.957806,
+     "1.2.0"
+    ],
+    [
+     "2026-10-20",
+     3.968666,
+     "1.2.0"
+    ],
+    [
+     "2026-10-21",
+     3.979526,
+     "1.2.0"
+    ],
+    [
+     "2026-10-22",
+     3.990861,
+     "1.2.0"
+    ]
+   ],
+   "signal": {
+    "earliest_live_session": null,
+    "history_sessions": 16,
+    "latest_fixing": "2026-10-22",
+    "message": "latest published fixing is too old to sign a signal",
+    "methodology_version": "1.2.0",
+    "required_sessions": 64,
+    "status": "stale",
+    "value": null,
+    "window_coverage": null
+   }
+  }
+ },
+ "spec": {
+  "baskets": {
+   "hyperscalers": [
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "META"
+   ],
+   "returns_benchmark": "SPY",
+   "suppliers_and_neoclouds": [
+    "NVDA",
+    "AMD",
+    "AVGO",
+    "CRWV",
+    "NBIS"
+   ]
+  },
+  "campaign_1": {
+   "bootstrap_block_weeks": 8,
+   "capture": "position_t * (Y_t - m_t); m_t = mean of every Y_s whose 8-week window had closed by t, from the discovery start; at least 13 such Y_s are required or the week is not evaluated",
+   "confirmation_outcome": {
+    "basket": "hyperscalers",
+    "fiscal_period": "FY+1",
+    "horizon_weeks": 8,
+    "measure": "capex",
+    "min_contributors": 3,
+    "min_names": 3,
+    "rule": "mean capture positive in validation and in holdout (sign only)"
+   },
+   "primary_outcome": {
+    "basket": "suppliers_and_neoclouds",
+    "basket_value": "equal-weight mean over names with at least 3 contributors at both ends",
+    "fiscal_period": "FY+1",
+    "freshness": "a consensus observation counts on a date only if it is dated within the 7 days up to and including that date",
+    "horizon_weeks": 8,
+    "measure": "revenue",
+    "min_contributors": 3,
+    "min_names": 3,
+    "per_name": "log(consensus mean at t+8w / consensus mean at t), the fiscal year pinned by its fiscal_year_end at t"
+   },
+   "question": "Do GPU rental prices lead consensus estimate revisions?",
+   "reported_only": [
+    "FY+1 EPS revisions, suppliers_and_neoclouds",
+    "primary outcome at 4 and 13 weeks"
+   ],
+   "traded": false
+  },
+  "campaign_2": {
+   "base_cost_bps_per_side": 5,
+   "bootstrap_block_weeks": 4,
+   "capture": "position_t * Y_t - cost_t; cost_t = cost_bps * |position_t - position_(t-1)| * 2 legs / 10000; the first week pays entry",
+   "elevated_cost_bps_per_side": 10,
+   "extra_gate": "mean capture after base costs exceeds the mean of always holding the basket against SPY (the always-long baseline)",
+   "outcome": "Y_t = equal-weight mean log total return of suppliers_and_neoclouds over the next ISO week minus the SPY log total return over the same week",
+   "question": "Do returns follow?",
+   "runs_only_if": "campaign 1 verdict is PASS; otherwise it stays sealed and is never evaluated",
+   "traded": true
+  },
+  "data_requirements": {
+   "campaign_2_total_return_closes": {
+    "from": "2023-07-01",
+    "min_week_coverage": 0.9,
+    "sealed_until": "campaign 1 PASS",
+    "symbols": [
+     "NVDA",
+     "AMD",
+     "AVGO",
+     "CRWV",
+     "NBIS",
+     "SPY"
+    ],
+    "week_counts_if": "SPY and at least 3 basket names have closes at both ends"
+   },
+   "consensus_capex_fy1": {
+    "basket": "hyperscalers",
+    "from": "2023-07-01",
+    "min_week_coverage": 0.9,
+    "source": "licensed, point-in-time",
+    "through": "every decision week whose 8-week window has closed"
+   },
+   "consensus_revenue_fy1": {
+    "basket": "suppliers_and_neoclouds",
+    "from": "2023-07-01",
+    "min_week_coverage": 0.9,
+    "source": "licensed, point-in-time",
+    "through": "every decision week whose 8-week window has closed"
+   },
+   "gpu_rental_history_h100": {
+    "from": "2023-03-01",
+    "min_session_coverage": 0.9,
+    "source": "licensed",
+    "to": "2026-07-31"
+   },
+   "index_h100_holdout": {
+    "holdout_weeks_with_live_signal_and_closed_window": 52,
+    "source": "public index tape"
+   },
+   "index_h200_and_b200_holdout": {
+    "min_share_of_holdout_weeks_live": 0.9,
+    "source": "public index tape"
+   }
+  },
+  "decision_rule": [
+   "Stages run in order: discovery, then validation, then holdout. A stage that fails ends the campaign with FAIL; a stage below its floor ends it with UNTESTABLE.",
+   "Campaign 1 is PASS only if discovery passes every gate, validation passes every gate and the capex confirmation, and the holdout passes every gate, the capex confirmation, and both the H200 and B200 checks.",
+   "Campaign 2 is evaluated only after a campaign 1 PASS, by the same stage sequence and gates plus the always-long baseline gate; its holdout also requires both checks.",
+   "The holdout is opened once. A refusal for missing data is not a verdict and does not open it.",
+   "No parameter, basket, date, horizon or gate changes after this freeze. A changed idea is a new mission with a new ledger entry; this campaign's verdict stands as recorded."
+  ],
+  "frozen_on": "2026-10-08",
+  "future_sources_not_in_this_campaign": [
+   {
+    "name": "CME Group (NYMEX) H100 and B200 rental index futures",
+    "sources": [
+     "https://www.cmegroup.com/content/dam/cmegroup/notices/ser/2026/08/ser-9785.pdf",
+     "https://investor.cmegroup.com/node/55686"
+    ],
+    "status": "announced for trade date 5 October 2026, pending regulatory review; listing confirmed by exchange notice",
+    "use": "a forward curve for rental prices. Using it would be a new pre-registration, not an amendment to this one."
+   }
+  ],
+  "gates": {
+   "below_floor": "UNTESTABLE, recorded as such and never as refuted",
+   "every_stage": [
+    "mean weekly capture positive (after base costs where traded)",
+    "positive in the first half and in the second half of the stage's weeks",
+    "positive with the single best week removed",
+    "5% lower bound of a consecutive-block bootstrap of the mean positive (2000 resamples, seed from the pre-registration hash)",
+    "positive at twice the base trading cost (traded outcomes only; not applicable to estimate revisions)"
+   ],
+   "holdout_checks": "the same capture computed with the H200 signal and with the B200 signal must each have a positive mean",
+   "sample_floor": {
+    "min_state_share": 0.2,
+    "min_weeks": {
+     "discovery": 52,
+     "holdout": 52,
+     "validation": 52
+    }
+   }
+  },
+  "hypothesis": "GPU rental prices lead consensus estimate revisions for AI-infrastructure companies. When the 3-month change in the H100 rental price is positive, the basket's consensus FY+1 revenue estimates are revised up by more than their running average over the following 8 weeks, and by less when it is negative. Only if that holds is the second question asked: do the basket's returns follow?",
+  "mission": "gpu-leads-revisions",
+  "schema": "preregistration/1",
+  "signal": {
+   "anchor_tolerance_sessions": 3,
+   "calendar": "XNYS full-day sessions (research/prereg/xnys.py); weekend and holiday fixings ignored",
+   "checks": [
+    "H200",
+    "B200"
+   ],
+   "definition": "log(V_t / V_anchor), V = published rental index value in USD per GPU-hour, anchor = the fixing 63 XNYS sessions before t",
+   "lag": "the signal used for a decision at the last session of ISO week t is the one computable at the previous session, read as of 14:30 UTC on the decision session",
+   "lookback_sessions": 63,
+   "max_staleness_sessions": 3,
+   "min_window_coverage": 0.9,
+   "observation_rules": [
+    "one value per index and date: the revision live at the as-of time (point-in-time, never a later correction)",
+    "only status=published rows count; withheld days are missing and are never filled",
+    "a window may not span a methodology version change"
+   ],
+   "position": "+1 if the signal is above zero, -1 if below; a week with no live signal, or a signal of exactly zero, is not evaluated",
+   "primary": "H100",
+   "sources": {
+    "checks": "H200 and B200 from the public index tape, holdout only",
+    "discovery_and_validation": "licensed multi-year daily H100 rental price history (not held)",
+    "holdout": "the public GPU rental price index tape, gpu-price-index series/index_values.csv, read point-in-time"
+   }
+  },
+  "stages": {
+   "discovery": {
+    "end": "2024-12-31",
+    "start": "2023-07-01"
+   },
+   "embargo": {
+    "end": "2026-10-08",
+    "note": "no stage reads these weeks",
+    "start": "2026-08-01"
+   },
+   "holdout": {
+    "closes_after_evaluable_weeks": 52,
+    "note": "every holdout week is after the freeze; it is opened once, when its requirements are met",
+    "start": "2026-10-09"
+   },
+   "validation": {
+    "end": "2026-07-31",
+    "start": "2025-01-01"
+   }
+  },
+  "weekly_grid": "the last XNYS session of each ISO week is the decision session",
+  "what_this_cannot_say": "One signal, one basket, one horizon. A PASS says the 3-month H100 rental change carried information about the following 8 weeks of consensus revisions for these nine names over these dates; it is not a trading signal, and campaign 2 would still have to show the returns follow after costs. A FAIL says this version of the idea, stated this way, did not hold. Research only; not investment advice."
+ },
+ "tape": {
+  "error": null,
+  "sha256": "0c74185d040639fe5a6fc041ecf23d0b2091207435d410b2c9f60ff7133b9b5d",
+  "source": "/tmp/gpu-index-values.csv"
+ }
+}

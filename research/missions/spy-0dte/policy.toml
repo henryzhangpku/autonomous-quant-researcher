@@ -1,0 +1,14 @@
+name = "spy-0dte-autoresearch"
+
+[validator]
+version = "spy-options-causal-v2"
+command = ["python", "-m", "research.validators.options", "--candidate", "{candidate}", "--symbol", "SPY", "--split", "validation"]
+pattern = 'score=(?P<value>-?[0-9]+(?:\.[0-9]+)?)'
+name = "excess_edge_pp"
+direction = "maximize"
+target_metric = 2.0
+
+[budget]
+timeout_seconds = 120
+max_attempts = 50
+min_attempts = 5

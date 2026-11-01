@@ -1,0 +1,635 @@
+{
+  "adjustment": "all (splits and dividends); raw fetched alongside for audit only",
+  "benchmarks": [
+    "SPY",
+    "QQQ",
+    "SMH"
+  ],
+  "bytes": 1144253,
+  "data_file": "prices_daily.csv (host-local, git-ignored; rebuild with this script)",
+  "data_sha256": "f60c9b2ebe0df60988b8d3815e9ea5e19c4a85c817a7c398a3f84821502585f0",
+  "endpoint": "StockHistoricalDataClient.get_stock_bars",
+  "feed": "sip",
+  "limitations": [
+    "all-adjusted levels are rescaled backwards at every new dividend; use returns, not levels, and never treat an adjusted level as what was quoted that day",
+    "CRWV listed 2025-03-28 and NBIS resumed trading 2024-10-21; earlier sessions are absent, not filled",
+    "consolidated SIP daily bars; session close is the official consolidated close as Alpaca aggregates it"
+  ],
+  "per_symbol": {
+    "AMD": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "f4534e5b9a515408be0be0cc634b2fdc947bdd4909463df2625342f56eae66db",
+        "raw": "12b1b1bc724f86975d96173c23440fa7ab19b80d71f1bf86271ef0b2145f762a"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:30:54.806535Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "AMD"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "AMZN": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "da244419c4cca0cb261d1b43a156a55665ed424556b3c0ba53ec9e8ada571358",
+        "raw": "9f9e03ea5e1c095d23f499ba3de0a8d911f26592816b53b54d75723a2652c33b"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:05.464770Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "AMZN"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "AVGO": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [
+        {
+          "factor_change": -0.9,
+          "raw_close_ratio": 0.1008,
+          "session": "2024-07-15"
+        }
+      ],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "e62b4293515838c6caa5ef4e9da268244e2cbd2e7a5a2d2aa19d149b70bfe381",
+        "raw": "24818080e1a5bcfc490eb6c1656694f9c77407ffd28e3240a573da15398c28f1"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:30:56.262819Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "AVGO"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "CRWV": {
+      "adjusted_outlier_days": [
+        {
+          "log_return": 0.3491,
+          "session": "2025-04-01"
+        }
+      ],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "eae9fdf9e95947844304b60487884ddc4736da8506becc90227ad55b0273954b",
+        "raw": "67a01965254b6df6de39f7778daf05f578626f04fbf6754b76784ced95ffc563"
+      },
+      "first_session": "2025-03-28",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:09.731931Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "CRWV"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 384,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "GOOGL": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "f9784bf0fe89cb270d2c81c3113a3444073bc65ab39a3f8af861ce25bff8358e",
+        "raw": "2a1d7f7058147c8d1d9053f0c6e0856ed989bd8fe62c407a706be6f001ca39d5"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:06.922975Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "GOOGL"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "META": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "7c7758979dfbef595c57b8e18f655462c703053a058cc4757d084eb13eb1c980",
+        "raw": "64801ca74818c71f342c0be5db8395b19a4a8ccd2a25f40bed529c06d07d1a13"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:08.303798Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "META"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "MSFT": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "a3523c05b10b3150e4ff0887a80a7f20ae7fe8bc0e176d6b775064e6ca313388",
+        "raw": "46dca16a0fed19f20b5ce4bbbd8d01b3e595cf250f690eb2e5e164c14d315596"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:04.055831Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "MSFT"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "MU": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "fd73652e52bff836955caf43731acbf426fd500da206c4fd9fdf9b22ad898782",
+        "raw": "bc3579de38fdbb4ae260b50cfe5a154500df9f19a962c1be96069ed8f8e669f8"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:30:59.341693Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "MU"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "NBIS": {
+      "adjusted_outlier_days": [
+        {
+          "log_return": -0.4691,
+          "session": "2025-01-27"
+        },
+        {
+          "log_return": 0.4016,
+          "session": "2025-09-09"
+        }
+      ],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "97dae560c938965c985fff8002c44ca8c5b59af9b963190b630ac3ad7b720b53",
+        "raw": "88fa9400a3ae5872cfb19a2562249cee68ae35da20e8e6ac18d45e186db6a7cf"
+      },
+      "first_session": "2024-10-21",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:11.101541Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "NBIS"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 492,
+      "untraded_bars_dropped": 409,
+      "untraded_range": [
+        "2023-01-03",
+        "2024-08-19"
+      ]
+    },
+    "NVDA": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [
+        {
+          "factor_change": -0.9,
+          "raw_close_ratio": 0.1007,
+          "session": "2024-06-10"
+        }
+      ],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "056c32e0c40c10b4e1da517d5651df273044e788c5ba3770b9fa53988ec28f11",
+        "raw": "d86d644a9f48630ffeb8b0e120c91a703043a0d7424ccee22f0a699a588f9195"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:30:53.429862Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "NVDA"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "ORCL": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "32ce21c9e518ef3e463cff6d66cf0971b03df1519abf681b871f36494d7fc5e3",
+        "raw": "98bcf886ef61d9ce463623d256f1c1c18836b94d9c6dc3d20a428eab931b6c5b"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:02.617979Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "ORCL"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "QQQ": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "ff5709728d5b75ab6d00fc83772d1a413caa4897feb633b1d45f9e3b9dd7eb59",
+        "raw": "9f759353e0ed2c392cd43148619b12e680e2f8ca1ad7296054616c3482420bc9"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:13.895712Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "QQQ"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "SMCI": {
+      "adjusted_outlier_days": [
+        {
+          "log_return": -0.3956,
+          "session": "2024-10-30"
+        },
+        {
+          "log_return": -0.4053,
+          "session": "2026-03-20"
+        }
+      ],
+      "adjustment_factor_steps": [
+        {
+          "factor_change": -0.9,
+          "raw_close_ratio": 0.0974,
+          "session": "2024-10-01"
+        }
+      ],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "6b859c3690d5f02978936de529d466d0d6a1fed7b70cf20091f1a8ab4a85bf54",
+        "raw": "29ae0ffb100cb522ddc205f75a591ebacf052cef238220c550239ebc92aaf38f"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:00.970291Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "SMCI"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "SMH": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [
+        {
+          "factor_change": -0.5,
+          "raw_close_ratio": 0.5106,
+          "session": "2023-05-05"
+        }
+      ],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "82f25a1d7d23393f2c6847e59f6014999593eb7ed398163f818792309866c3aa",
+        "raw": "c7b22b3af7fab09ccd096e150789ef97747ef57e2561edb60152c61c6dd60cf7"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:15.276080Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "SMH"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "SPY": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "0d1d033bff7519f4cfbbf356115c9cefaa606acc3f458da12f25735c07f94c11",
+        "raw": "3d4b62e6f1515a68d5517b075a0d2cd6b3d7495b6a43abdec5ea71034b5fb08d"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:31:12.529259Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "SPY"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    },
+    "TSM": {
+      "adjusted_outlier_days": [],
+      "adjustment_factor_steps": [],
+      "bars_on_non_sessions": [],
+      "cache_sha256": {
+        "all": "e0837c6cfe670eedf29bc80a89dcceb4225325a029e279afc92305632f42d773",
+        "raw": "04f96533bb3c08ea1aa3f14f64d0d55aa567aa365baaffd262887c641f50358a"
+      },
+      "first_session": "2023-01-03",
+      "last_session": "2026-10-07",
+      "missing_xnys_sessions": [],
+      "provenance": {
+        "end_utc": "2026-10-08T00:00:00Z",
+        "endpoint": "StockHistoricalDataClient.get_stock_bars",
+        "parameters": {
+          "adjustment": "all",
+          "feed": "sip",
+          "limit": null,
+          "timeframe": "1Day"
+        },
+        "provider": "alpaca",
+        "provider_request_id": null,
+        "requested_at_utc": "2026-10-08T21:30:57.682731Z",
+        "session": "utc",
+        "start_utc": "2023-01-01T00:00:00Z",
+        "symbols": [
+          "TSM"
+        ]
+      },
+      "rows_without_raw_close": 0,
+      "sessions": 944,
+      "untraded_bars_dropped": 0,
+      "untraded_range": null
+    }
+  },
+  "prepared_at_utc": "2026-10-08T21:36:15.277606+00:00",
+  "provider": "alpaca",
+  "requested_end": "2026-10-07",
+  "requested_start": "2023-01-01",
+  "row_count": 14092,
+  "symbols": [
+    "NVDA",
+    "AMD",
+    "AVGO",
+    "TSM",
+    "MU",
+    "SMCI",
+    "ORCL",
+    "MSFT",
+    "AMZN",
+    "GOOGL",
+    "META",
+    "CRWV",
+    "NBIS"
+  ],
+  "timeframe": "1Day"
+}

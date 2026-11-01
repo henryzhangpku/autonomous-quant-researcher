@@ -1,0 +1,103 @@
+/*
+ * Demo-only layout rules, layered over the shared board stylesheet. The board
+ * (broadcast.css/js) is the operator's research show, copied verbatim; the
+ * page around it is a public demo with a first-time visitor and no operator.
+ * Everything a visitor should NOT see, and everything the fixed frame needs
+ * to leave room for, lives here so the shared files stay untouched.
+ */
+
+/* The board is a fixed, scroll-free frame that fills the viewport. The demo
+   banner is fixed to the bottom edge, so the frame ends above it or the rail
+   and the "+ New research" button sit under the banner (they did). */
+:root { --demo-banner-h: 34px; }
+.bc { inset: 0 0 var(--demo-banner-h) 0; }
+.bc-new { bottom: calc(var(--demo-banner-h) + clamp(10px, 1vw, 20px)); }
+
+/* Operator chrome with no meaning here: the gateway pill (there is no task
+   gateway, the pill read "GATEWAY · DEMO" struck through) and the loop-count
+   line ("— loops today"), which trailed the stage strip as a bare dash. */
+#bc-auto, #bc-loop-count { display: none !important; }
+
+/* Ledger rows: the shared board clips each reason to one line with an
+   ellipsis because it is sized for a 1080p stream. Here the reasons ARE the
+   evidence a reviewer came to read, and the panel has the room, so they wrap. */
+.bc-row { white-space: normal; align-items: start; }
+.bc-row .bc-note { white-space: normal; overflow: visible; text-overflow: clip; }
+
+/* ── The boot card ─────────────────────────────────────────────────────── */
+/* Pyodide takes 20-40 s to load on a first visit. During that time the board
+   honestly reads "Standing by / ENGINE NOT READY", which a visitor reads as
+   broken. The card says what is loading, how long it takes, and what they
+   are about to watch, then removes itself the moment the engine is ready. */
+.demo-boot {
+  position: fixed;
+  inset: 0 0 var(--demo-banner-h) 0;
+  z-index: 10001;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 10, 14, 0.82);
+  backdrop-filter: blur(2px);
+  color: #e8e8e8;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.demo-boot[hidden] { display: none; }
+.demo-boot-card {
+  width: min(640px, calc(100vw - 32px));
+  background: #11141c;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-top: 4px solid #f5c451;
+  border-radius: 14px;
+  padding: 22px 26px 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+.demo-boot-card h2 { margin: 0 0 4px; font-size: 22px; font-weight: 900; letter-spacing: -0.01em; }
+.demo-boot-card .demo-sub { margin: 0 0 14px; color: #9aa3b5; font-size: 14px; line-height: 1.45; }
+.demo-boot-card .demo-status {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 0 16px; padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05); border-radius: 8px;
+  font-size: 13px; font-weight: 700; color: #f5c451;
+}
+.demo-boot-card .demo-status i {
+  width: 10px; height: 10px; border-radius: 50%; background: #f5c451;
+  animation: demo-pulse 1.1s ease-in-out infinite;
+}
+.demo-boot-card .demo-status.is-failed { color: #ff6b6b; }
+.demo-boot-card .demo-status.is-failed i { background: #ff6b6b; animation: none; }
+@keyframes demo-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.demo-boot-card .demo-kicker {
+  font-size: 11px; font-weight: 900; letter-spacing: 0.18em; color: #f5c451; margin: 0 0 8px;
+}
+.demo-boot-card ol { margin: 0 0 14px 1.2em; padding: 0; font-size: 14px; line-height: 1.5; }
+.demo-boot-card ol li + li { margin-top: 5px; }
+.demo-boot-card .demo-fine { margin: 0; color: #9aa3b5; font-size: 12.5px; line-height: 1.45; }
+.demo-boot-card .demo-fine b { color: #e8e8e8; }
+
+/* ── The stage explainer, inside the narration panel ───────────────────── */
+/* The narration panel carries one line (the best candidate's rationale) and
+   then a column of empty space. The explainer fills it with what the loop is
+   doing at this stage and why, in a visitor's words, and says when the run
+   has finished what the result means. */
+.demo-explainer {
+  margin-top: .4em;
+  padding-top: .8em;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 0;
+  overflow: auto;
+}
+.demo-explainer .bc-kicker { margin-bottom: .5em; }
+.demo-explainer p {
+  margin: 0 0 .7em;
+  font-size: clamp(13px, 1.05vw, 20px);
+  line-height: 1.45;
+  font-weight: 500;
+  color: #c9cfdb;
+  white-space: normal;
+  overflow: visible;
+  flex: none;
+}
+.demo-explainer p b { color: #fff; font-weight: 800; }
+.demo-explainer p.demo-verdict { color: #fff; font-weight: 700; }
+.demo-explainer p.demo-next {
+  color: #f5c451; font-weight: 800; letter-spacing: .02em;
+}
