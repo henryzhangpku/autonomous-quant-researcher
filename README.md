@@ -4,7 +4,7 @@
 
 **An LLM proposes trading hypotheses. Trusted code decides whether they are true.**
 
-**Paper:** [Hard to Fool: A Bounded LLM Research Loop for Quantitative Finance, and What Two Dozen Campaigns Found](https://arxiv.org/abs/2611.06607) (arXiv:2611.06607). How to cite it is [below](#citation).
+**Paper:** [Hard to Fool: A Bounded LLM Research Loop for Quantitative Finance, and What Two Dozen Campaigns Found](https://arxiv.org/abs/2611.06607) (arXiv:2611.06607; also on [SSRN](https://ssrn.com/abstract=7682019), doi:[10.2139/ssrn.7682019](https://doi.org/10.2139/ssrn.7682019)). How to cite it is [below](#citation).
 
 A bounded, resumable research loop for quantitative finance. A language model
 proposes candidate hypotheses inside a fixed vocabulary; a deterministic
@@ -261,6 +261,8 @@ If you use this work, please cite the paper:
 > Henry Zhang. *Hard to Fool: A Bounded LLM Research Loop for Quantitative
 > Finance, and What Two Dozen Campaigns Found.* arXiv:2611.06607, 2026.
 > https://arxiv.org/abs/2611.06607
+>
+> Also on SSRN: https://ssrn.com/abstract=7682019 (doi:10.2139/ssrn.7682019)
 
 ```bibtex
 @misc{zhang2026hardtofool,
